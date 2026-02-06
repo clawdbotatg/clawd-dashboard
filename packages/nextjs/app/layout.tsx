@@ -8,8 +8,8 @@ import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
 
 export const metadata = getMetadata({
-  title: 'Scaffold-ETH 2 App',
-  description: 'Built with 🏗 Scaffold-ETH 2'
+  title: '🤖 CLAWD Ecosystem',
+  description: 'Dashboard for the CLAWD ecosystem. Track burns, apps, and stats across all onchain CLAWD apps on Base.'
 });
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
