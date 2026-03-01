@@ -22,6 +22,10 @@ const CLAWDFOMO_ABI = [
   { type: "function", name: "paused", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "bool" }] },
 ] as const;
 
+const TOTAL_BURNED_ABI = [
+  { type: "function", name: "totalBurned", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
+] as const;
+
 const VOTE_ABI = [
   { type: "function", name: "nextProposalId", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
   { type: "function", name: "totalBurned", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
@@ -41,6 +45,11 @@ const VESTING_ABI = [
   { type: "function", name: "isLocked", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "bool" }] },
 ] as const;
 
+const STAKE_ABI = [
+  { type: "function", name: "totalBurned", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
+  { type: "function", name: "totalStaked", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
+] as const;
+
 const externalContracts = {
   8453: {
     CLAWD: {
@@ -50,6 +59,30 @@ const externalContracts = {
     ClawFomo: {
       address: "0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4",
       abi: CLAWDFOMO_ABI,
+    },
+    Incinerator: {
+      address: "0x536453350f2eee2eb8bfee1866baf4fca494a092",
+      abi: TOTAL_BURNED_ABI,
+    },
+    TenTwentyFourX: {
+      address: "0xaa7466fa805e59f06c83befb2b4e256a9b246b04",
+      abi: TOTAL_BURNED_ABI,
+    },
+    ClawdStake: {
+      address: "0x90552946edd5a6bad7647655da6c805a188dfd25",
+      abi: STAKE_ABI,
+    },
+    LuckyClick: {
+      address: "0x1062eace4f3083c164796b9b2649ce6c25acebe6",
+      abi: TOTAL_BURNED_ABI,
+    },
+    LobsterTower: {
+      address: "0x8d3547c0336149a1592472ac8d5c07c52865f801",
+      abi: TOTAL_BURNED_ABI,
+    },
+    MemeArena: {
+      address: "0x3371976d639a383bcfe6ac7c304602ac34351b53",
+      abi: TOTAL_BURNED_ABI,
     },
     CLAWDVote: {
       address: "0xf86D964188115AFc8DBB54d088164f624B916442",

@@ -8,10 +8,9 @@ import { base } from "viem/chains";
 // ─── Constants ─────────────────────────────────────────────────────
 const CLAWD_TOKEN = "0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07" as const;
 const DEAD = "0x000000000000000000000000000000000000dEaD" as const;
-const DEPLOYER3          = "0xa822155c242B3a307086F1e2787E393d78A0B5AC" as const; // leftclaw deployer (clawd-deployer-3 keystore)
-const CLAWDHEART_DEPLOYER = "0x472C382550780cD30e1D27155b96Fa4b63d9247e" as const; // clawdheart.eth deployer
-const RIGHTCLAW_DEPLOYER  = "0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46" as const; // rightclaw deployer (clawd-crash-deployer keystore)
-// Note: rightclaw.eth ENS (0x8c00...7cE93) is a Rainbow browser wallet — cannot deploy via scripts
+const DEPLOYER3          = "0xa822155c242B3a307086F1e2787E393d78A0B5AC" as const;
+const CLAWDHEART_DEPLOYER = "0x472C382550780cD30e1D27155b96Fa4b63d9247e" as const;
+const RIGHTCLAW_DEPLOYER  = "0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46" as const;
 
 const DEPLOYERS = [
   { name: "deployer3",          ens: null,             address: DEPLOYER3,           desc: "leftclaw primary deployer" },
@@ -24,6 +23,32 @@ const RPC = typeof window !== "undefined"
   : "https://mainnet.base.org";
 
 const client = createPublicClient({ chain: base, transport: http(RPC) });
+
+// ─── Contract Addresses ────────────────────────────────────────────
+const INCINERATOR = "0x536453350f2eee2eb8bfee1866baf4fca494a092" as const;
+
+const CLAWFOMO_VERSIONS = [
+  "0x859e5cb97e1cf357643a6633d5bec6d45e44cfd4",
+  "0x861e96c70a94cdebfb3fb89f3a96fe16b5e31891",
+  "0xcb67a69471f4842a142460c271a26deab358ea79",
+  "0x572bc6149a5a9b013b5e9c370aef6fec8388f53f",
+  "0xd4f419065ee4b89ef8f9b2c224a9ebdee62abf54",
+  "0xa5cd6e15f91ae84f5513a60c398f3c5e4c43e399",
+  "0x23f44c39f417f16807643fc8eb3435c3e47e1a32",
+] as const;
+
+const TENTWENTYFOURX_VERSIONS = [
+  "0xaa7466fa805e59f06c83befb2b4e256a9b246b04",
+  "0xef2f6d7020f4b088fee65d5369bc792d7b2f40fc",
+  "0x6b003f883c608bdad938cd6dc3730b17ac46e196",
+] as const;
+
+const CLAWD_STAKE = "0x90552946edd5a6bad7647655da6c805a188dfd25" as const;
+const CLAWD_PFP_MARKET = "0xa37c70168201c290cbefcbda95daa779f0dba305" as const;
+const LUCKY_CLICK = "0x1062eace4f3083c164796b9b2649ce6c25acebe6" as const;
+const LOBSTER_TOWER = "0x8d3547c0336149a1592472ac8d5c07c52865f801" as const;
+const MEME_ARENA = "0x3371976d639a383bcfe6ac7c304602ac34351b53" as const;
+const CLAWD_VICTION = "0xfe69980a1203d664488a73ae806514d2a04c1f8a" as const;
 
 // ─── ABIs ──────────────────────────────────────────────────────────
 const erc20Abi = parseAbi([
@@ -38,37 +63,35 @@ const fomoAbi = parseAbi([
 ]);
 const totalBurnedAbi = parseAbi(["function totalBurned() view returns (uint256)"]);
 const totalClawdBurnedAbi = parseAbi(["function totalClawdBurned() view returns (uint256)"]);
-// totalPostsAbi available if needed
+const totalStakedAbi = parseAbi(["function totalStaked() view returns (uint256)"]);
 const nextProposalIdAbi = parseAbi(["function nextProposalId() view returns (uint256)"]);
 const nextIdeaIdAbi = parseAbi(["function nextIdeaId() view returns (uint256)"]);
 const totalMintedAbi = parseAbi(["function totalMinted() view returns (uint256)"]);
 const isLockedAbi = parseAbi(["function isLocked() view returns (bool)"]);
 
 // ─── Contract Registry ─────────────────────────────────────────────
-interface AppInfo {
-  name: string;
-  emoji: string;
-  desc: string;
-  address: string;
-  site?: string;
-  github?: string;
-  tier: 1 | 2 | 3;
-}
-
-const PRODUCTION_APPS: AppInfo[] = [
-  { name: "ClawFomo", emoji: "🔥", desc: "Last-bidder-wins game — 323+ rounds played", address: "0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4", site: "https://clawfomo.com", tier: 1 },
-  { name: "CLAWDlabs", emoji: "🧪", desc: "Idea staking — submit and back ecosystem ideas", address: "0xa51fe0491292fbad5caa23f674cd59c1480ec60a", site: "https://labs.clawdbotatg.eth.link", tier: 1 },
-  { name: "Liquidity Vesting", emoji: "🔒", desc: "WETH+CLAWD locked in Uniswap V3 for linear vesting", address: "0x7916773e871a832ae2b6046b0f964a078dc67ab4", tier: 1 },
-  { name: "Sponsored 8004", emoji: "🤖", desc: "ERC-8004 agent identity registration", address: "", site: "https://sponsored-8004-registration-nextjs.vercel.app", tier: 1 },
+const PRODUCTION_APPS = [
+  { name: "ClawFomo", emoji: "🎮", desc: "Last-bidder-wins game", address: "0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4", site: "https://clawfomo.com", tier: 1 as const },
+  { name: "Incinerator", emoji: "🔥", desc: "Massive CLAWD burn engine", address: INCINERATOR, tier: 1 as const },
+  { name: "TenTwentyFourX", emoji: "🎯", desc: "Click-to-reveal prediction game", address: TENTWENTYFOURX_VERSIONS[0], tier: 1 as const },
+  { name: "CLAWDlabs", emoji: "🧪", desc: "Idea staking", address: "0xa51fe0491292fbad5caa23f674cd59c1480ec60a", site: "https://labs.clawdbotatg.eth.link", tier: 1 as const },
+  { name: "Liquidity Vesting", emoji: "🔒", desc: "WETH+CLAWD locked in Uniswap V3", address: "0x7916773e871a832ae2b6046b0f964a078dc67ab4", tier: 1 as const },
+  { name: "Sponsored 8004", emoji: "🤖", desc: "ERC-8004 agent identity registration", address: "", site: "https://sponsored-8004-registration-nextjs.vercel.app", tier: 1 as const },
 ];
 
-const UTILITY_APPS: AppInfo[] = [
-  { name: "Burner", emoji: "🔥", desc: "Auto-burns 500K/hour, 5K caller reward", address: "0xe499B193ffD38626D79e526356F3445ce0A943B9", tier: 2 },
-  { name: "Chat", emoji: "💬", desc: "Burn 10K CLAWD to post onchain messages", address: "0x33f97501921e40c56694b259115b89b6a6ee5500", tier: 2 },
-  { name: "Vote", emoji: "🗳️", desc: "Create proposals, stake to vote", address: "0xf86D964188115AFc8DBB54d088164f624B916442", tier: 2 },
-  { name: "PFP", emoji: "🎨", desc: "0.001 ETH mint, 1M CLAWD burned per mint", address: "0x0dD551Df233cA7B4CE45e2f4bb17faB3c0b53647", tier: 2 },
-  { name: "10K", emoji: "🦞", desc: "10,000 generative onchain SVG NFTs", address: "0xaA120337233148e6af935069d69eE3AD037eD822", tier: 2 },
-  { name: "Meme Contest", emoji: "🏆", desc: "Submit memes, community votes, winner takes pool", address: "0x716836Ebf9f6E3b18110CCef89E06dD07b8371c6", tier: 2 },
+const UTILITY_APPS = [
+  { name: "ClawdStake", emoji: "🏦", desc: "Stake CLAWD, earn rewards", address: CLAWD_STAKE, tier: 2 as const },
+  { name: "ClawdPFPMarket", emoji: "🖼", desc: "Profile Pic Prediction Market", address: CLAWD_PFP_MARKET, tier: 2 as const },
+  { name: "LuckyClick", emoji: "🎰", desc: "Luck-based burn game", address: LUCKY_CLICK, tier: 2 as const },
+  { name: "LobsterTower", emoji: "🗼", desc: "Stack-and-climb tower game", address: LOBSTER_TOWER, tier: 2 as const },
+  { name: "Meme Arena", emoji: "🏟️", desc: "Vote on memes, burn CLAWD", address: MEME_ARENA, tier: 2 as const },
+  { name: "ClawdViction", emoji: "🧠", desc: "AI conviction governance", address: CLAWD_VICTION, tier: 2 as const },
+  { name: "Burner", emoji: "🔥", desc: "Auto-burns 500K/hour, 5K caller reward", address: "0xe499B193ffD38626D79e526356F3445ce0A943B9", tier: 2 as const },
+  { name: "Chat", emoji: "💬", desc: "Burn 10K CLAWD to post onchain", address: "0x33f97501921e40c56694b259115b89b6a6ee5500", tier: 2 as const },
+  { name: "Vote", emoji: "🗳️", desc: "Create proposals, stake to vote", address: "0xf86D964188115AFc8DBB54d088164f624B916442", tier: 2 as const },
+  { name: "PFP", emoji: "🎨", desc: "0.001 ETH mint, 1M CLAWD burned per mint", address: "0x0dD551Df233cA7B4CE45e2f4bb17faB3c0b53647", tier: 2 as const },
+  { name: "10K", emoji: "🦞", desc: "10,000 generative onchain SVG NFTs", address: "0xaA120337233148e6af935069d69eE3AD037eD822", tier: 2 as const },
+  { name: "Meme Contest", emoji: "🏆", desc: "Submit memes, community votes, winner takes pool", address: "0x716836Ebf9f6E3b18110CCef89E06dD07b8371c6", tier: 2 as const },
 ];
 
 const PROTOTYPE_CONTRACTS: { name: string; address: string; desc: string }[] = [
@@ -139,6 +162,24 @@ const fmtUsd = (n: number): string => {
 const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 const basescanAddr = (a: string) => `https://basescan.org/address/${a}`;
 
+async function safeRead(address: string, abi: any, functionName: string): Promise<bigint> {
+  try {
+    const result = await client.readContract({ address: address as `0x${string}`, abi, functionName } as any);
+    return result as bigint;
+  } catch {
+    return 0n;
+  }
+}
+
+async function safeReadBool(address: string, abi: any, functionName: string): Promise<boolean> {
+  try {
+    const result = await client.readContract({ address: address as `0x${string}`, abi, functionName } as any);
+    return result as boolean;
+  } catch {
+    return false;
+  }
+}
+
 // ─── Data types ────────────────────────────────────────────────────
 interface DashData {
   // Global
@@ -146,11 +187,25 @@ interface DashData {
   totalSupply: bigint;
   clawdPrice: number;
   fdv: number;
-  // ClawFomo
-  fomoRounds: bigint;
-  fomoBurned: bigint;
+  // Incinerator
+  incineratorBurned: bigint;
+  incineratorBalance: bigint;
+  // ClawFomo aggregated
+  fomoTotalRounds: bigint;
+  fomoTotalBurned: bigint;
   fomoActive: boolean;
   fomoPot: bigint;
+  // TenTwentyFourX aggregated
+  tenTwentyFourXBurned: bigint;
+  // ClawdStake
+  stakeBurned: bigint;
+  stakeTotal: bigint;
+  // Meme Arena
+  memeArenaBurned: bigint;
+  // LuckyClick
+  luckyClickBurned: bigint;
+  // LobsterTower
+  lobsterTowerBurned: bigint;
   // Utility
   chatBurned: bigint;
   voteBurned: bigint;
@@ -164,6 +219,8 @@ interface DashData {
   // Vesting
   vestLocked: boolean;
   vestClawdBal: bigint;
+  // Aggregated total burn
+  totalBurnedAll: bigint;
 }
 
 // ─── Page ──────────────────────────────────────────────────────────
@@ -174,18 +231,65 @@ const Home: NextPage = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [
-        deadBal, supply,
-        fomoRounds, fomoBurned, fomoInfo,
-        chatBurned, voteBurned, voteProposals,
-        pfpBurned, pfpMinted, tenKBurned, tenKMinted,
-        labsIdeas, vestLocked, vestBal,
-      ] = await Promise.all([
+      // Core reads
+      const [deadBal, supply] = await Promise.all([
         client.readContract({ address: CLAWD_TOKEN, abi: erc20Abi, functionName: "balanceOf", args: [DEAD] }),
         client.readContract({ address: CLAWD_TOKEN, abi: erc20Abi, functionName: "totalSupply" }),
-        client.readContract({ address: "0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4", abi: fomoAbi, functionName: "getRoundCount" }),
-        client.readContract({ address: "0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4", abi: fomoAbi, functionName: "totalBurned" }),
-        client.readContract({ address: "0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4", abi: fomoAbi, functionName: "getRoundInfo" }),
+      ]);
+
+      // Incinerator
+      const [incBurned, incBalance] = await Promise.all([
+        safeRead(INCINERATOR, totalBurnedAbi, "totalBurned"),
+        client.readContract({ address: CLAWD_TOKEN, abi: erc20Abi, functionName: "balanceOf", args: [INCINERATOR] }),
+      ]);
+
+      // ClawFomo — aggregate all versions
+      const fomoResults = await Promise.all(
+        CLAWFOMO_VERSIONS.map(async (addr) => {
+          const [burned, rounds] = await Promise.all([
+            safeRead(addr, totalBurnedAbi, "totalBurned"),
+            safeRead(addr, fomoAbi, "getRoundCount"),
+          ]);
+          return { burned, rounds };
+        })
+      );
+      const fomoTotalBurned = fomoResults.reduce((s, r) => s + r.burned, 0n);
+      const fomoTotalRounds = fomoResults.reduce((s, r) => s + r.rounds, 0n);
+
+      // Current fomo round info
+      let fomoActive = false;
+      let fomoPot = 0n;
+      try {
+        const info = await client.readContract({
+          address: CLAWFOMO_VERSIONS[0] as `0x${string}`,
+          abi: fomoAbi,
+          functionName: "getRoundInfo",
+        });
+        fomoPot = info[1];
+        fomoActive = info[6];
+      } catch {}
+
+      // TenTwentyFourX — aggregate all versions
+      const ttfxResults = await Promise.all(
+        TENTWENTYFOURX_VERSIONS.map(addr => safeRead(addr, totalBurnedAbi, "totalBurned"))
+      );
+      const tenTwentyFourXBurned = ttfxResults.reduce((s, v) => s + v, 0n);
+
+      // ClawdStake
+      const [stakeBurned, stakeTotal] = await Promise.all([
+        safeRead(CLAWD_STAKE, totalBurnedAbi, "totalBurned"),
+        safeRead(CLAWD_STAKE, totalStakedAbi, "totalStaked"),
+      ]);
+
+      // Other burns
+      const [memeArenaBurned, luckyClickBurned, lobsterTowerBurned] = await Promise.all([
+        safeRead(MEME_ARENA, totalBurnedAbi, "totalBurned"),
+        safeRead(LUCKY_CLICK, totalBurnedAbi, "totalBurned"),
+        safeRead(LOBSTER_TOWER, totalBurnedAbi, "totalBurned"),
+      ]);
+
+      // Existing utility reads
+      const [chatBurned, voteBurned, voteProposals, pfpBurned, pfpMinted, tenKBurned, tenKMinted, labsIdeas, vestLocked, vestBal] = await Promise.all([
         safeRead("0x33f97501921e40c56694b259115b89b6a6ee5500", totalBurnedAbi, "totalBurned"),
         safeRead("0xf86D964188115AFc8DBB54d088164f624B916442", totalBurnedAbi, "totalBurned"),
         safeRead("0xf86D964188115AFc8DBB54d088164f624B916442", nextProposalIdAbi, "nextProposalId"),
@@ -197,6 +301,9 @@ const Home: NextPage = () => {
         safeReadBool("0x7916773e871a832ae2b6046b0f964a078dc67ab4", isLockedAbi, "isLocked"),
         client.readContract({ address: CLAWD_TOKEN, abi: erc20Abi, functionName: "balanceOf", args: ["0x7916773e871a832ae2b6046b0f964a078dc67ab4"] }),
       ]);
+
+      // Aggregated total burn
+      const totalBurnedAll = deadBal + incBurned + fomoTotalBurned + tenTwentyFourXBurned + stakeBurned + memeArenaBurned + luckyClickBurned + lobsterTowerBurned;
 
       // Fetch price from DexScreener
       let price = 0, fdv = 0;
@@ -214,20 +321,29 @@ const Home: NextPage = () => {
         totalSupply: supply,
         clawdPrice: price,
         fdv,
-        fomoRounds: fomoRounds,
-        fomoBurned: fomoBurned,
-        fomoActive: fomoInfo[6],
-        fomoPot: fomoInfo[1],
-        chatBurned: chatBurned,
-        voteBurned: voteBurned,
-        voteProposals: voteProposals,
-        pfpBurned: pfpBurned,
-        pfpMinted: pfpMinted,
-        tenKBurned: tenKBurned,
-        tenKMinted: tenKMinted,
-        labsIdeas: labsIdeas,
-        vestLocked: vestLocked,
+        incineratorBurned: incBurned,
+        incineratorBalance: incBalance,
+        fomoTotalRounds,
+        fomoTotalBurned,
+        fomoActive,
+        fomoPot,
+        tenTwentyFourXBurned,
+        stakeBurned,
+        stakeTotal,
+        memeArenaBurned,
+        luckyClickBurned,
+        lobsterTowerBurned,
+        chatBurned,
+        voteBurned,
+        voteProposals,
+        pfpBurned,
+        pfpMinted,
+        tenKBurned,
+        tenKMinted,
+        labsIdeas,
+        vestLocked,
         vestClawdBal: vestBal,
+        totalBurnedAll,
       });
       setLastUpdate(new Date());
     } catch (e) {
@@ -243,8 +359,10 @@ const Home: NextPage = () => {
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  const totalContracts = PRODUCTION_APPS.length + UTILITY_APPS.length + PROTOTYPE_CONTRACTS.length;
+
   const burnedPct = data
-    ? ((parseFloat(formatUnits(data.totalBurnedDead, 18)) / parseFloat(formatUnits(data.totalSupply, 18))) * 100).toFixed(2)
+    ? ((parseFloat(formatUnits(data.totalBurnedAll, 18)) / parseFloat(formatUnits(data.totalSupply, 18))) * 100).toFixed(2)
     : "0";
 
   return (
@@ -274,42 +392,91 @@ const Home: NextPage = () => {
         ) : data ? (
           <>
             {/* ═══ HERO STATS ═══ */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-10">
-              <StatCard label="🔥 Total Burned" value={fmt(data.totalBurnedDead)} sub={`${burnedPct}% of supply`} accent />
-              <StatCard label="💰 USD Burned" value={fmtUsd(parseFloat(formatUnits(data.totalBurnedDead, 18)) * data.clawdPrice)} />
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-10">
+              <StatCard label="🔥 Total Burned" value={fmt(data.totalBurnedAll)} sub={`${burnedPct}% of supply`} accent />
+              <StatCard label="💰 USD Burned" value={fmtUsd(parseFloat(formatUnits(data.totalBurnedAll, 18)) * data.clawdPrice)} />
               <StatCard label="📈 CLAWD Price" value={data.clawdPrice > 0 ? `$${data.clawdPrice.toFixed(8)}` : "—"} />
               <StatCard label="🏛️ FDV" value={data.fdv > 0 ? fmtUsd(data.fdv) : "—"} />
-              <StatCard label="🎮 Fomo Rounds" value={data.fomoRounds.toString()} accent />
-              <StatCard label="🏠 Contracts" value={(PRODUCTION_APPS.length + UTILITY_APPS.length + PROTOTYPE_CONTRACTS.length).toString()} />
+              <StatCard label="🎮 Fomo Rounds" value={data.fomoTotalRounds.toString()} accent />
+              <StatCard label="🏦 CLAWD Staked" value={fmt(data.stakeTotal)} />
+              <StatCard label="🏠 Contracts" value={totalContracts.toString()} />
             </div>
 
-            {/* ═══ SECTION 1: PRODUCTION APPS ═══ */}
-            <SectionHeader emoji="⭐" title="Production Apps" sub="Real usage, real transactions" />
+            {/* ═══ SECTION 1: FLAGSHIP APPS ═══ */}
+            <SectionHeader emoji="⭐" title="Flagship Apps" sub="The core of the CLAWD ecosystem" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-              {/* ClawFomo — featured card */}
-              <div className="md:col-span-2 rounded-xl p-6 border border-red-900/40" style={{ background: "linear-gradient(135deg, #1a0a0a 0%, #0e0e14 100%)" }}>
+
+              {/* 🔥 Incinerator — featured */}
+              <div className="rounded-xl p-6 border border-orange-900/40" style={{ background: "linear-gradient(135deg, #1a0800 0%, #0e0e14 100%)" }}>
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="text-2xl font-bold flex items-center gap-2">
-                      <span>🔥</span> ClawFomo
+                      <span>🔥</span> Incinerator
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-orange-900/60 text-orange-400">ACTIVE</span>
+                    </h3>
+                    <p className="text-gray-400 mt-1">Massive burn engine — the ecosystem&apos;s #1 burner</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <MiniStat label="Total Burned" value={fmt(data.incineratorBurned)} accent />
+                  <MiniStat label="CLAWD Pending" value={fmt(data.incineratorBalance)} />
+                  <MiniStat label="USD Burned" value={fmtUsd(parseFloat(formatUnits(data.incineratorBurned, 18)) * data.clawdPrice)} />
+                </div>
+                <div className="mt-3 text-xs text-gray-600">
+                  <a href={basescanAddr(INCINERATOR)} target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 font-mono">
+                    {shortAddr(INCINERATOR)} ↗
+                  </a>
+                </div>
+              </div>
+
+              {/* 🎮 ClawFomo — featured, aggregated */}
+              <div className="rounded-xl p-6 border border-red-900/40" style={{ background: "linear-gradient(135deg, #1a0a0a 0%, #0e0e14 100%)" }}>
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-2xl font-bold flex items-center gap-2">
+                      <span>🎮</span> ClawFomo
                       {data.fomoActive && <span className="text-xs px-2 py-0.5 rounded-full bg-green-900/60 text-green-400 animate-pulse">LIVE</span>}
                       {!data.fomoActive && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-500">Between rounds</span>}
                     </h3>
-                    <p className="text-gray-400 mt-1">Last-bidder-wins game — the ecosystem&apos;s flagship dApp</p>
+                    <p className="text-gray-400 mt-1">Last-bidder-wins — 7 versions, {data.fomoTotalRounds.toString()} rounds</p>
                   </div>
                   <a href="https://clawfomo.com" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors" style={{ background: "#ff4444", color: "#fff" }}>
                     Play →
                   </a>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <MiniStat label="Rounds Played" value={data.fomoRounds.toString()} />
-                  <MiniStat label="CLAWD Burned" value={fmt(data.fomoBurned)} accent />
+                  <MiniStat label="Total Rounds" value={data.fomoTotalRounds.toString()} />
+                  <MiniStat label="CLAWD Burned" value={fmt(data.fomoTotalBurned)} accent />
                   <MiniStat label="Current Pot" value={`${fmt(data.fomoPot)} CLAWD`} />
-                  <MiniStat label="USD Burned" value={fmtUsd(parseFloat(formatUnits(data.fomoBurned, 18)) * data.clawdPrice)} />
+                  <MiniStat label="USD Burned" value={fmtUsd(parseFloat(formatUnits(data.fomoTotalBurned, 18)) * data.clawdPrice)} />
                 </div>
                 <div className="mt-3 text-xs text-gray-600">
-                  <a href={basescanAddr("0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4")} target="_blank" rel="noopener noreferrer" className="hover:text-gray-400">
-                    {shortAddr("0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4")} ↗
+                  <a href={basescanAddr(CLAWFOMO_VERSIONS[0])} target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 font-mono">
+                    {shortAddr(CLAWFOMO_VERSIONS[0])} ↗
+                  </a>
+                  <span className="ml-2 text-gray-700">+ 6 previous versions</span>
+                </div>
+              </div>
+
+              {/* 🎯 TenTwentyFourX — featured */}
+              <div className="rounded-xl p-6 border border-purple-900/40" style={{ background: "linear-gradient(135deg, #150a1a 0%, #0e0e14 100%)" }}>
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-2xl font-bold flex items-center gap-2">
+                      <span>🎯</span> TenTwentyFourX
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-400">2000+ txs</span>
+                    </h3>
+                    <p className="text-gray-400 mt-1">Click-to-reveal prediction game — 3 versions</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <MiniStat label="Total Burned" value={fmt(data.tenTwentyFourXBurned)} accent />
+                  <MiniStat label="USD Burned" value={fmtUsd(parseFloat(formatUnits(data.tenTwentyFourXBurned, 18)) * data.clawdPrice)} />
+                  <MiniStat label="Versions" value="3" />
+                </div>
+                <div className="mt-3 text-xs text-gray-600">
+                  <a href={basescanAddr(TENTWENTYFOURX_VERSIONS[0])} target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 font-mono">
+                    {shortAddr(TENTWENTYFOURX_VERSIONS[0])} ↗
                   </a>
                 </div>
               </div>
@@ -341,9 +508,21 @@ const Home: NextPage = () => {
               />
             </div>
 
-            {/* ═══ SECTION 2: UTILITY APPS ═══ */}
-            <SectionHeader emoji="⚡" title="Core Utility Apps" sub="CLAWD token mechanics" />
+            {/* ═══ SECTION 2: PRODUCTION APPS ═══ */}
+            <SectionHeader emoji="⚡" title="Production Apps" sub="Live contracts with real usage" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-10">
+              <AppCard emoji="🏦" name="ClawdStake" desc="Stake CLAWD, earn rewards" address={CLAWD_STAKE}
+                stats={[{ label: "Staked", value: fmt(data.stakeTotal) }, { label: "Burned", value: fmt(data.stakeBurned), accent: true }]} />
+              <AppCard emoji="🖼" name="ClawdPFPMarket" desc="Profile Pic Prediction Market — 355 txs" address={CLAWD_PFP_MARKET}
+                stats={[]} />
+              <AppCard emoji="🎰" name="LuckyClick" desc="Luck-based burn game" address={LUCKY_CLICK}
+                stats={[{ label: "Burned", value: fmt(data.luckyClickBurned), accent: true }]} />
+              <AppCard emoji="🗼" name="LobsterTower" desc="Stack-and-climb tower game" address={LOBSTER_TOWER}
+                stats={[{ label: "Burned", value: fmt(data.lobsterTowerBurned), accent: true }]} />
+              <AppCard emoji="🏟️" name="Meme Arena" desc="Vote on memes, burn CLAWD" address={MEME_ARENA}
+                stats={[{ label: "Burned", value: fmt(data.memeArenaBurned), accent: true }]} />
+              <AppCard emoji="🧠" name="ClawdViction" desc="AI conviction governance" address={CLAWD_VICTION}
+                stats={[]} />
               <AppCard emoji="🔥" name="Burner" desc="Auto-burns 500K/hour" address="0xe499B193ffD38626D79e526356F3445ce0A943B9" stats={[]} />
               <AppCard emoji="💬" name="Chat" desc="Burn CLAWD to post onchain" address="0x33f97501921e40c56694b259115b89b6a6ee5500"
                 stats={[{ label: "CLAWD Burned", value: fmt(data.chatBurned), accent: true }]} />
@@ -356,7 +535,7 @@ const Home: NextPage = () => {
               <AppCard emoji="🏆" name="Meme Contest" desc="Submit memes, vote, win" address="0x716836Ebf9f6E3b18110CCef89E06dD07b8371c6" stats={[]} />
             </div>
 
-            {/* ═══ SECTION 3: ALL DEPLOYS ═══ */}
+            {/* ═══ SECTION 3: PROTOTYPES ═══ */}
             <SectionHeader emoji="🧪" title="Nightly Prototypes" sub={`${PROTOTYPE_CONTRACTS.length} experimental contracts deployed to Base`} />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-10">
               {PROTOTYPE_CONTRACTS.map(c => (
@@ -490,25 +669,6 @@ function SectionHeader({ emoji, title, sub }: { emoji: string; title: string; su
       <p className="text-sm text-gray-500">{sub}</p>
     </div>
   );
-}
-
-// ─── Safe contract reads ───────────────────────────────────────────
-async function safeRead(address: `0x${string}`, abi: any, functionName: string): Promise<bigint> {
-  try {
-    const result = await client.readContract({ address, abi, functionName });
-    return result as bigint;
-  } catch {
-    return 0n;
-  }
-}
-
-async function safeReadBool(address: `0x${string}`, abi: any, functionName: string): Promise<boolean> {
-  try {
-    const result = await client.readContract({ address, abi, functionName });
-    return result as boolean;
-  } catch {
-    return false;
-  }
 }
 
 export default Home;
