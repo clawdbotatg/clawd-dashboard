@@ -6,38 +6,39 @@ const ERC20_ABI = [
   { type: "function", name: "decimals", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint8" }] },
 ] as const;
 
-const BURNER_ABI = [
+const CLAWDFOMO_ABI = [
+  { type: "function", name: "currentRound", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
   { type: "function", name: "totalBurned", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { type: "function", name: "burnAmount", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { type: "function", name: "burnInterval", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { type: "function", name: "callerReward", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { type: "function", name: "totalBurns", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-] as const;
-
-const CHAT_ABI = [
-  { type: "function", name: "totalPosts", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { type: "function", name: "totalBurned", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { type: "function", name: "postCost", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
+  { type: "function", name: "getRoundCount", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
+  { type: "function", name: "getRoundInfo", stateMutability: "view", inputs: [], outputs: [
+    { name: "round", type: "uint256" },
+    { name: "pot", type: "uint256" },
+    { name: "keyPrice", type: "uint256" },
+    { name: "endTime", type: "uint256" },
+    { name: "lastBidder", type: "address" },
+    { name: "totalKeys", type: "uint256" },
+    { name: "active", type: "bool" },
+  ] },
+  { type: "function", name: "paused", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "bool" }] },
 ] as const;
 
 const VOTE_ABI = [
   { type: "function", name: "nextProposalId", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
   { type: "function", name: "totalBurned", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { type: "function", name: "proposalCost", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
 ] as const;
 
 const PFP_ABI = [
   { type: "function", name: "totalMinted", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
   { type: "function", name: "totalClawdBurned", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { type: "function", name: "maxSupply", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { type: "function", name: "mintPrice", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
 ] as const;
 
 const TEN_K_ABI = [
   { type: "function", name: "totalMinted", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
   { type: "function", name: "totalBurned", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { type: "function", name: "mintPrice", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { type: "function", name: "remainingSupply", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
+] as const;
+
+const VESTING_ABI = [
+  { type: "function", name: "isLocked", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "bool" }] },
 ] as const;
 
 const externalContracts = {
@@ -46,13 +47,9 @@ const externalContracts = {
       address: "0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07",
       abi: ERC20_ABI,
     },
-    CLAWDBurner: {
-      address: "0xe499B193ffD38626D79e526356F3445ce0A943B9",
-      abi: BURNER_ABI,
-    },
-    CLAWDChat: {
-      address: "0x33f97501921e40c56694b259115b89b6a6ee5500",
-      abi: CHAT_ABI,
+    ClawFomo: {
+      address: "0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4",
+      abi: CLAWDFOMO_ABI,
     },
     CLAWDVote: {
       address: "0xf86D964188115AFc8DBB54d088164f624B916442",
@@ -65,6 +62,10 @@ const externalContracts = {
     CLAWD10K: {
       address: "0xaA120337233148e6af935069d69eE3AD037eD822",
       abi: TEN_K_ABI,
+    },
+    LiquidityVesting: {
+      address: "0x7916773e871a832ae2b6046b0f964a078dc67ab4",
+      abi: VESTING_ABI,
     },
   },
 } as const;
