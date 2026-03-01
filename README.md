@@ -54,6 +54,7 @@ Open http://localhost:3000
 | CLAWD Token | `0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07` |
 | Dead (burn sink) | `0x000000000000000000000000000000000000dEaD` |
 | Deployer3 | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` |
+| clawdheart.eth (Deployer2) | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` |
 | ClawFomo | `0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4` |
 | Safe Multisig | `0x90eF2A9211A3E7CE788561E5af54C76B0Fa3aEd0` |
 
@@ -67,23 +68,31 @@ This section documents the full process for discovering, mapping, and measuring 
 
 ### Step 1 — Find All Deployed Contracts
 
-The primary deployer is **Deployer3**: `0xa822155c242B3a307086F1e2787E393d78A0B5AC`
+There are **two deployer addresses** that have shipped CLAWD contracts. Check both every time.
 
-Get every contract creation transaction from this address:
+| Deployer | Address | ENS | Notes |
+|----------|---------|-----|-------|
+| Deployer3 | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` | — | Primary deployer, most contracts |
+| clawdheart.eth | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` | clawdheart.eth | Second deployer — track all its contracts too |
+| Main wallet | `0x11ce532845ce0eacda41f72fdc1c88c335981442` | clawdbotatg.eth | Occasional direct deploys |
+
+Get every contract creation transaction from each deployer:
 
 ```bash
-# Basescan API — get all txs, filter for contract creations (contractAddress != "")
+# Deployer3
 curl "https://api.basescan.org/api?module=account&action=txlist&address=0xa822155c242B3a307086F1e2787E393d78A0B5AC&startblock=0&endblock=99999999&sort=asc" \
   | jq -r '.result[] | select(.contractAddress != "") | "\(.contractAddress) \(.timeStamp | tonumber | strftime("%Y-%m-%d")) \(.hash)"'
-```
 
-**What you get:** A list of contract addresses + deploy date + tx hash.
+# clawdheart.eth
+curl "https://api.basescan.org/api?module=account&action=txlist&address=0x472C382550780cD30e1D27155b96Fa4b63d9247e&startblock=0&endblock=99999999&sort=asc" \
+  | jq -r '.result[] | select(.contractAddress != "") | "\(.contractAddress) \(.timeStamp | tonumber | strftime("%Y-%m-%d")) \(.hash)"'
 
-**Also check the main wallet** for any direct deploys:
-```bash
+# Main wallet (clawdbotatg.eth)
 curl "https://api.basescan.org/api?module=account&action=txlist&address=0x11ce532845ce0eacda41f72fdc1c88c335981442&startblock=0&endblock=99999999&sort=asc" \
   | jq -r '.result[] | select(.contractAddress != "") | "\(.contractAddress) \(.timeStamp | tonumber | strftime("%Y-%m-%d"))"'
 ```
+
+**What you get:** A unified list of contract addresses + deploy date + tx hash. Deduplicate by address before proceeding.
 
 ---
 
@@ -227,9 +236,13 @@ Note: `balanceOf(DEAD_ADDRESS)` on the CLAWD token catches any burns sent direct
 To discover new contracts deployed after your last crawl, just filter by block number:
 
 ```bash
-# Get only contracts deployed after block LAST_CHECKED_BLOCK
-curl "https://api.basescan.org/api?module=account&action=txlist&address=0xa822155c242B3a307086F1e2787E393d78A0B5AC&startblock=LAST_CHECKED_BLOCK&endblock=99999999&sort=asc" \
-  | jq -r '.result[] | select(.contractAddress != "") | .contractAddress'
+# Check BOTH deployers for new contracts since LAST_CHECKED_BLOCK
+for deployer in \
+  "0xa822155c242B3a307086F1e2787E393d78A0B5AC" \
+  "0x472C382550780cD30e1D27155b96Fa4b63d9247e"; do
+  curl -s "https://api.basescan.org/api?module=account&action=txlist&address=$deployer&startblock=LAST_CHECKED_BLOCK&endblock=99999999&sort=asc" \
+    | jq -r '.result[] | select(.contractAddress != "") | .contractAddress'
+done | sort -u
 ```
 
 Track the last checked block in a local file or the nerve cord activity log. Any new contract addresses that come back — run them through Steps 2–5 to classify and metric them.
@@ -289,7 +302,8 @@ yarn bgipfs upload out
 | LiquidityVesting v7 | `0x7916773e871a832ae2b6046b0f964a078dc67ab4` | 20+ | Current vesting contract |
 | LiquidityVesting v5 | `0x8cF3261a51eB6Eb437d6db1369c3cf0b3514669C` | 10+ | Prev version |
 | Fee Claim | `0xF3622742b1E446D92e45E22923Ef11C2fcD55D68` | 10+ | Uniswap fee claims |
-| Deployer3 | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` | — | All contract deploys from here |
+| Deployer3 | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` | — | Primary deployer |
+| clawdheart.eth | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` | — | Second deployer — track this too |
 | Safe Multisig | `0x90eF2A9211A3E7CE788561E5af54C76B0Fa3aEd0` | — | Protocol treasury |
 
 ---
@@ -297,11 +311,17 @@ yarn bgipfs upload out
 ### Useful One-Liners
 
 ```bash
-# List all contracts deployed by deployer3, sorted by tx count (descending)
-DEPLOYER=0xa822155c242B3a307086F1e2787E393d78A0B5AC
-CONTRACTS=$(curl -s "https://api.basescan.org/api?module=account&action=txlist&address=$DEPLOYER&startblock=0&endblock=99999999&sort=asc" | jq -r '.result[] | select(.contractAddress != "") | .contractAddress')
+# List ALL contracts from ALL deployers, sorted by tx count (descending)
+DEPLOYERS=(
+  "0xa822155c242B3a307086F1e2787E393d78A0B5AC"  # Deployer3
+  "0x472C382550780cD30e1D27155b96Fa4b63d9247e"  # clawdheart.eth
+  "0x11ce532845ce0eacda41f72fdc1c88c335981442"  # clawdbotatg.eth main wallet
+)
 
-for addr in $CONTRACTS; do
+for deployer in "${DEPLOYERS[@]}"; do
+  curl -s "https://api.basescan.org/api?module=account&action=txlist&address=$deployer&startblock=0&endblock=99999999&sort=asc" \
+    | jq -r '.result[] | select(.contractAddress != "") | .contractAddress'
+done | sort -u | while read addr; do
   count=$(curl -s "https://api.basescan.org/api?module=account&action=txlist&address=$addr&startblock=0&endblock=99999999" | jq '.result | length')
   echo "$count $addr"
 done | sort -rn
