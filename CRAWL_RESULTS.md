@@ -192,14 +192,16 @@ _Last updated: 2026-03-01_
 
 ---
 
-## ❓ UNIDENTIFIED — Need Austin's Help
-One remaining mystery:
+## 🏟️ Meme Arena (meme game)
+> Confirmed by Austin. `vote(uint256)` = vote on a meme by ID.
 
-| Address | Txs | Known Metrics | Clues |
-|---------|-----|---------------|-------|
-| `0x3371976d639a383bcfe6ac7c304602ac34351b53` | 23 | 340K CLAWD burned | functions: `vote(uint256)`, `proposeOwner`, `executeWithdraw` — owned by clawdbotatg.eth |
+| Address | Txs | totalBurned | Notes |
+|---------|-----|-------------|-------|
+| `0x3371976d639a383bcfe6ac7c304602ac34351b53` | 23 | 340K CLAWD | current — not in dashboard |
 
-_Note: `0xef2f...` confirmed as TenTwentyFourX (clawd-1024x) — selectors matched exactly._
+---
+
+## ✅ All contracts identified — no unknowns remaining
 
 ---
 
@@ -228,5 +230,5 @@ _Note: Dashboard currently shows only 144M (ClawFomo current only)._
 - [ ] Add ClawdPFPMarket card
 - [ ] Fix hero "Total Burned" to aggregate ALL contracts + dead address
 - [ ] Aggregate ClawFomo across all 7 versions
-- [ ] Identify 0xef2f and 0x3371
+- [ ] Add Meme Arena card (0x3371..., 340K burned)
 - [ ] Check CrashGame deployer + add card
