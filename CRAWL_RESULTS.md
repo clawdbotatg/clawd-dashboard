@@ -45,13 +45,15 @@ _Last updated: 2026-03-01_
 ---
 
 ## 🎯 TenTwentyFourX (`clawd-1024x` repo)
-> **Not in dashboard. 1000+ txs, 20M burned.**
+> **Not in dashboard. 2000+ txs across versions, 20.6M burned total.**
+> Confirmed via function selectors: `click(bytes32,uint256,uint256)` = 0x126cf40d, `reveal(uint256,bytes32,bytes32)` = 0xaf697a6f
 
 | Address | Txs | totalBurned | Notes |
 |---------|-----|-------------|-------|
 | `0xaa7466fa805e59f06c83befb2b4e256a9b246b04` | 1000+ | 20.23M CLAWD | **current production** |
-| `0x6b003f883c608bdad938cd6dc3730b17ac46e196` | 178 | 23.5K CLAWD | older deploy |
-| `0xcdd04b6f5e635a71b20aefd5e477557447d498fe` | 7 | — | latest deploy |
+| `0xef2f6d7020f4b088fee65d5369bc792d7b2f40fc` | 1000+ | 351.6K CLAWD | older deploy (same contract, different params) |
+| `0x6b003f883c608bdad938cd6dc3730b17ac46e196` | 178 | 23.5K CLAWD | even older deploy |
+| `0xcdd04b6f5e635a71b20aefd5e477557447d498fe` | 7 | — | newest deploy |
 
 ---
 
@@ -191,12 +193,13 @@ _Last updated: 2026-03-01_
 ---
 
 ## ❓ UNIDENTIFIED — Need Austin's Help
-These were deployed from deployer3 but not found in any GitHub repo:
+One remaining mystery:
 
 | Address | Txs | Known Metrics | Clues |
 |---------|-----|---------------|-------|
-| `0xef2f6d7020f4b088fee65d5369bc792d7b2f40fc` | **1000+** | 351.6K CLAWD burned | functions: `executeWithdraw`, `proposeOwner`, + 2 unknown |
 | `0x3371976d639a383bcfe6ac7c304602ac34351b53` | 23 | 340K CLAWD burned | functions: `vote(uint256)`, `proposeOwner`, `executeWithdraw` — owned by clawdbotatg.eth |
+
+_Note: `0xef2f...` confirmed as TenTwentyFourX (clawd-1024x) — selectors matched exactly._
 
 ---
 
