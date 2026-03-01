@@ -1,357 +1,450 @@
 # 🦞 CLAWD Dashboard — Ecosystem Analytics
 
-Live onchain analytics dashboard for the entire CLAWD ecosystem on Base.
+Live onchain analytics for every CLAWD app on Base. All numbers pulled directly from contracts via RPC — no subgraph, no backend.
 
-**🔗 [View on GitHub](https://github.com/clawdbotatg/clawd-dashboard)**
+**Repo:** `github.com/clawdbotatg/clawd-dashboard`
+**Dev server:** `localhost:3000` (run from `packages/nextjs`)
+**Stack:** Scaffold-ETH 2 · Next.js · viem · Base mainnet · Alchemy RPC
 
 ---
 
-## What It Shows
-
-### Hero Stats
-- 🔥 Total CLAWD burned (from dead address)
-- 💰 USD value burned
-- 📈 CLAWD price (DexScreener)
-- 🏛️ Fully diluted valuation
-- 🎮 ClawFomo rounds played
-- 🏠 Total contracts deployed
-
-### Production Apps (Tier 1)
-- **ClawFomo** — Last-bidder-wins game with 323+ rounds and 144M+ CLAWD burned
-- **CLAWDlabs** — Idea staking platform (19+ ideas submitted)
-- **Liquidity Vesting** — WETH+CLAWD locked in Uniswap V3
-- **Sponsored 8004** — ERC-8004 agent identity registration
-
-### Core Utility Apps (Tier 2)
-- Burner, Chat, Vote, PFP, 10K, Meme Contest
-
-### Nightly Prototypes (Tier 3)
-- Experimental contracts with real on-chain activity
-
-## Tech Stack
-
-- **Scaffold-ETH 2** (Next.js + viem)
-- **Base mainnet** (chain 8453)
-- **Direct RPC reads** via `createPublicClient` — no subgraph needed
-- **DexScreener API** for price data
-- **Auto-refresh** every 30 seconds
-
-## Run Locally
+## How to Run
 
 ```bash
+cd ~/Projects/clawd-dashboard
 yarn install
 cd packages/nextjs
-cp .env.local.example .env.local  # Add your Alchemy RPC URL
+cp .env.local.example .env.local  # add NEXT_PUBLIC_BASE_RPC=https://base-mainnet.g.alchemy.com/v2/<key>
 yarn dev
 ```
 
-Open http://localhost:3000
-
-## Key Addresses
-
-| Name | Address |
-|------|---------|
-| CLAWD Token | `0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07` |
-| Dead (burn sink) | `0x000000000000000000000000000000000000dEaD` |
-| leftclaw Deployer3 | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` |
-| clawdheart deployer | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` |
-| rightclaw deployer | `0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46` |
-| rightclaw.eth (Rainbow, browser-only) | `0x8c00eae9b9A2f89BddaAE4f6884C716562C7cE93` |
-| ClawFomo | `0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4` |
-| Safe Multisig | `0x90eF2A9211A3E7CE788561E5af54C76B0Fa3aEd0` |
+Alchemy key: `8GVG8WjDs-sGFRr6Rm839` (in `.env.local` only, never commit)
 
 ---
 
-## 🤖 Agent Data Crawl Playbook
+## Current Dashboard State
 
-This section documents the full process for discovering, mapping, and measuring every contract in the CLAWD ecosystem. Run this whenever you want to find new contracts, update metrics, or onboard a new agent to the dashboard.
+The dashboard has three tiers:
+1. **Production Apps** — ClawFomo featured, CLAWDlabs, Liquidity Vesting, Sponsored 8004
+2. **Core Utility Apps** — Burner, Chat, Vote, PFP, 10K, Meme Contest
+3. **Nightly Prototypes** — 43 experimental contracts in a grid
 
----
-
-### Step 1 — Find All Deployed Contracts
-
-There are **two deployer addresses** that have shipped CLAWD contracts. Check both every time.
-
-| Deployer | Address | Keystore | Notes |
-|----------|---------|----------|-------|
-| leftclaw deployer (Deployer3) | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` | `clawd-deployer-3` | Primary — most contracts |
-| clawdheart deployer | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` | — | clawdheart.eth |
-| rightclaw deployer | `0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46` | `clawd-crash-deployer` | rightclaw script deployer |
-| Main wallet | `0x11ce532845ce0eacda41f72fdc1c88c335981442` | — | clawdbotatg.eth, occasional deploys |
-
-> ⚠️ `rightclaw.eth` ENS resolves to `0x8c00eae9b9A2f89BddaAE4f6884C716562C7cE93` (Rainbow browser wallet) — this is NOT a deployer. The actual rightclaw deployer with a scriptable private key is `0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46`.
-
-Get every contract creation transaction from each deployer:
-
-```bash
-# Deployer3
-curl "https://api.basescan.org/api?module=account&action=txlist&address=0xa822155c242B3a307086F1e2787E393d78A0B5AC&startblock=0&endblock=99999999&sort=asc" \
-  | jq -r '.result[] | select(.contractAddress != "") | "\(.contractAddress) \(.timeStamp | tonumber | strftime("%Y-%m-%d")) \(.hash)"'
-
-# clawdheart.eth
-curl "https://api.basescan.org/api?module=account&action=txlist&address=0x472C382550780cD30e1D27155b96Fa4b63d9247e&startblock=0&endblock=99999999&sort=asc" \
-  | jq -r '.result[] | select(.contractAddress != "") | "\(.contractAddress) \(.timeStamp | tonumber | strftime("%Y-%m-%d")) \(.hash)"'
-
-# Main wallet (clawdbotatg.eth)
-curl "https://api.basescan.org/api?module=account&action=txlist&address=0x11ce532845ce0eacda41f72fdc1c88c335981442&startblock=0&endblock=99999999&sort=asc" \
-  | jq -r '.result[] | select(.contractAddress != "") | "\(.contractAddress) \(.timeStamp | tonumber | strftime("%Y-%m-%d"))"'
-```
-
-**What you get:** A unified list of contract addresses + deploy date + tx hash. Deduplicate by address before proceeding.
+**Known gaps (as of 2026-03-01 crawl):**
+- Incinerator not shown — it's the #1 burner (530M CLAWD), bigger than ClawFomo
+- TenTwentyFourX not shown — 2000+ txs, 20M burned
+- ClawdStake not shown — 2M CLAWD currently staked
+- LuckyClick not shown — 100+ txs
+- LobsterTower not shown
+- ClawdPFPMarket not shown — 355 txs
+- Meme Arena not shown
+- Hero "Total Burned" only reads dead address — should sum all contract burns too
+- ClawFomo shown as single contract — actually 7 deployed versions
 
 ---
 
-### Step 2 — Score Each Contract by Activity
+## Complete Contract Registry
+_Updated: 2026-03-01 via full deployer crawl_
 
-For every contract found in Step 1, count its total transactions. This tells you which ones are real apps vs throwaway tests:
-
-```bash
-# For each CONTRACT_ADDRESS:
-curl "https://api.basescan.org/api?module=account&action=txlist&address=CONTRACT_ADDRESS&startblock=0&endblock=99999999" \
-  | jq '.result | length'
-```
-
-**Thresholds:**
-| Tx Count | Classification |
-|----------|---------------|
-| 1000+ | Production app — flagship card |
-| 100–999 | Active app — full card |
-| 10–99 | Got traction — include in long-tail grid |
-| 1–9 | Prototype/test — list in "all deploys" section only |
-| 0 | Dead deploy — ignore |
-
-Sort the full list descending by tx count. The top 5–10 will be obvious production apps. Everything else is noise.
-
-**Also useful — check internal txs (for contracts that receive ETH):**
-```bash
-curl "https://api.basescan.org/api?module=account&action=txlistinternal&address=CONTRACT_ADDRESS&startblock=0&endblock=99999999" \
-  | jq '[.result[] | .value | tonumber] | add'
-# Returns total ETH received (in wei) — tells you if real money flowed through
-```
+### Core Token
+| Contract | Address | Notes |
+|----------|---------|-------|
+| CLAWD Token | `0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07` | ERC-20, Base |
+| Dead address | `0x000000000000000000000000000000000000dEaD` | burn sink |
 
 ---
 
-### Step 3 — Map Contracts to Projects
+### 🔥 Incinerator
+**Repo:** `github.com/clawdbotatg/clawd-incinerator`
+**Status:** Production — biggest burner in the ecosystem. Not yet in dashboard.
 
-Once you have a ranked list of contracts, figure out which project each belongs to. Two methods:
+| Address | Txs | `totalBurned` | CLAWD held | Notes |
+|---------|-----|--------------|------------|-------|
+| `0x536453350f2eee2eb8bfee1866baf4fca494a092` | 185 | **530M CLAWD** | ~150M CLAWD | current |
 
-**Method A — GitHub grep**
-
-For each high-activity contract address, search all CLAWD repos:
-
-```bash
-# Clone all repos to a temp dir
-gh repo list clawdbotatg --limit 100 --json name | jq -r '.[].name' | while read repo; do
-  gh repo clone "clawdbotatg/$repo" "/tmp/clawd-repos/$repo" -- --depth=1 2>/dev/null
-done
-
-# Search for a contract address across all repos
-grep -r "CONTRACT_ADDRESS" /tmp/clawd-repos/ --include="*.ts" --include="*.tsx" --include="*.json" -l
-```
-
-The file that mentions the address is the project it belongs to. Check `deployedContracts.ts` or `scaffold.config.ts` in each repo — SE2 projects always have the deployed address there.
-
-**Method B — Basescan contract name**
-
-If the contract is verified on Basescan, it has a name:
-
-```bash
-curl "https://api.basescan.org/api?module=contract&action=getsourcecode&address=CONTRACT_ADDRESS" \
-  | jq -r '.result[0].ContractName'
-```
-
-The contract name usually tells you the project (e.g. `ClawFomo`, `CLAWDChat`, `LiquidityVesting`).
-
-**Method C — Check input data of deploy tx**
-
-The deploy transaction's input data contains the constructor bytecode. If the contract is unverified, the function signature in the first few txs after deploy often reveals the project:
-
-```bash
-curl "https://api.basescan.org/api?module=account&action=txlist&address=CONTRACT_ADDRESS&startblock=0&endblock=99999999&sort=asc" \
-  | jq -r '.result[0:5][] | "\(.functionName) | \(.methodId)"'
-```
+> The 150M CLAWD sitting inside the contract will burn over time — it hasn't hit `totalBurned` yet.
 
 ---
 
-### Step 4 — Pull Metrics Per Contract
+### 🎮 ClawFomo
+**Repo:** `github.com/clawdbotatg/clawdfomo3d` · `github.com/clawdbotatg/clawd-fomo3d-v2`
+**Site:** `clawfomo.com`
+**Status:** Production flagship. 7 deployed versions — dashboard only tracks v1 (current).
 
-Once you know what each contract is, read its key metrics. Most CLAWD contracts follow a consistent naming convention:
+| Address | Txs | `totalBurned` | `currentRound` | Notes |
+|---------|-----|--------------|----------------|-------|
+| `0x859e5cb97e1cf357643a6633d5bec6d45e44cfd4` | 1000+ | 144.67M CLAWD | 323 | **current production** |
+| `0x861e96c70a94cdebfb3fb89f3a96fe16b5e31891` | 208 | 770.7K CLAWD | 32 | v2 |
+| `0xcb67a69471f4842a142460c271a26deab358ea79` | 92 | 283.2K CLAWD | 5 | v3 |
+| `0x572bc6149a5a9b013b5e9c370aef6fec8388f53f` | 54 | 74.7K CLAWD | 14 | v4 |
+| `0xd4f419065ee4b89ef8f9b2c224a9ebdee62abf54` | 52 | 43K CLAWD | 26 | v5 |
+| `0xa5cd6e15f91ae84f5513a60c398f3c5e4c43e399` | 23 | 11.9K CLAWD | 3 | v6 |
+| `0x23f44c39f417f16807643fc8eb3435c3e47e1a32` | 16 | 9K CLAWD | 6 | v7 |
 
-**Generic reads to try on every contract:**
-```bash
-# Try totalBurned (most utility contracts have this)
-cast call CONTRACT_ADDRESS "totalBurned()(uint256)" --rpc-url https://mainnet.base.org
-
-# Try totalMinted (NFT contracts)
-cast call CONTRACT_ADDRESS "totalMinted()(uint256)" --rpc-url https://mainnet.base.org
-
-# CLAWD token balance (how much CLAWD is locked/staked)
-cast call 0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07 "balanceOf(address)(uint256)" CONTRACT_ADDRESS --rpc-url https://mainnet.base.org
-
-# ETH balance (how much ETH is in the contract right now)
-cast balance CONTRACT_ADDRESS --rpc-url https://mainnet.base.org
-```
-
-**ClawFomo-specific reads:**
-```bash
-cast call FOMO_ADDRESS "roundId()(uint256)" --rpc-url https://mainnet.base.org  # current round
-cast call FOMO_ADDRESS "totalBurned()(uint256)" --rpc-url https://mainnet.base.org
-cast call FOMO_ADDRESS "pot()(uint256)" --rpc-url https://mainnet.base.org  # current pot in ETH
-```
-
-**Aggregate across ALL versions of the same project** (e.g. ClawFomo has multiple deployed contracts). Sum totalBurned, totalRounds, etc. across all versions for a single project total.
+**Aggregated totals:** ~1500 txs · ~146M CLAWD burned · 323 rounds (current only, others retired)
 
 ---
 
-### Step 5 — Aggregate to Project Level
+### 🎯 TenTwentyFourX
+**Repo:** `github.com/clawdbotatg/clawd-1024x`
+**Status:** Production. Commit-reveal click game. Not in dashboard.
+**Contract:** `TenTwentyFourX.sol` — key functions: `click(bytes32,uint256,uint256)`, `reveal(uint256,bytes32,bytes32)`
 
-Once you have per-contract metrics, roll them up to project level:
+| Address | Txs | `totalBurned` | Notes |
+|---------|-----|--------------|-------|
+| `0xaa7466fa805e59f06c83befb2b4e256a9b246b04` | 1000+ | 20.23M CLAWD | **current production** |
+| `0xef2f6d7020f4b088fee65d5369bc792d7b2f40fc` | 1000+ | 351.6K CLAWD | older deploy (same contract) |
+| `0x6b003f883c608bdad938cd6dc3730b17ac46e196` | 178 | 23.5K CLAWD | even older deploy |
+| `0xcdd04b6f5e635a71b20aefd5e477557447d498fe` | 7 | — | newest deploy |
 
-```
-Project: ClawFomo
-├── Contract v1: 0x... → rounds: 120, burned: 50M CLAWD, ETH paid out: 8.2 ETH
-├── Contract v2: 0x... → rounds: 98, burned: 42M CLAWD, ETH paid out: 6.8 ETH
-└── Contract v3: 0x... → rounds: 105, burned: 52M CLAWD, ETH paid out: 9.1 ETH
-─────────────────────────────────────────────────────────────────────────────
-Project Total:           rounds: 323, burned: 144M CLAWD, ETH paid out: 24.1 ETH
-```
-
-For the dashboard, display the project total prominently. Show individual contract versions in a collapsible "version history" or just link to Basescan.
-
----
-
-### Step 6 — Aggregate to Global Dashboard Level
-
-The hero stats sum across ALL projects:
-
-```
-🔥 Total CLAWD Burned = sum(totalBurned across all contracts) + balanceOf(DEAD_ADDRESS)
-⚡ Total Transactions = sum(tx count for all active contracts)
-🎮 Total Game Rounds = sum(ClawFomo rounds across all versions)
-💰 Total ETH Paid Out = sum(ETH volume across all game contracts)
-🦞 Total NFTs Minted = CLAWDPFP.totalMinted + CLAWD10K.totalMinted
-```
-
-Note: `balanceOf(DEAD_ADDRESS)` on the CLAWD token catches any burns sent directly to `0xdead` rather than through a contract's `totalBurned` counter.
+**Aggregated totals:** ~2200 txs · ~20.6M CLAWD burned
 
 ---
 
-### Step 7 — Find New Projects Since Last Check
+### 🏦 ClawdStake
+**Repo:** `github.com/clawdbotatg/clawd-stake`
+**Status:** Production. Stake CLAWD to earn. Not in dashboard.
 
-To discover new contracts deployed after your last crawl, just filter by block number:
+| Address | Txs | `totalBurned` | `totalStaked` | Notes |
+|---------|-----|--------------|---------------|-------|
+| `0x90552946edd5a6bad7647655da6c805a188dfd25` | 87 | 480K CLAWD | **2M CLAWD** | **current production** |
+| `0x4f564d77cecf0830487b80fa0812d40f41537ff6` | 4 | — | — | pilot |
+| `0xb077fe4b30e01377fc15880895aa10cf59b3d190` | 5 | — | — | test |
+
+---
+
+### 🖼 ClawdPFPMarket
+**Repo:** `github.com/clawdbotatg/clawd-pfp-market`
+**Description:** Profile Pic Prediction Market — stake CLAWD to choose Austin's next face.
+**Status:** Active. 355 txs on current contract. Not in dashboard.
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0xa37c70168201c290cbefcbda95daa779f0dba305` | 355 | **current production** |
+| `0x7a0b9f1bb27808c5020e83bdd711fb9b254f0826` | 16 | v2 |
+| `0x465fbd7d94c9bcc1cb4888949192bb924aae8ac3` | 8 | v3 |
+| `0xc92331a1e80aaa84aef12fdfb60bbeb9993c1104` | 8 | v4 |
+| `0xa01bd258165591c823b816eff2a88b6d8feb6182` | 7 | v5 |
+| `0x03838677300e46748099353da3e56ee8fd58eedc` | 1 | v6 |
+
+---
+
+### 🎰 LuckyClick
+**Repo:** `github.com/clawdbotatg/clawd-lucky-click`
+**Status:** Production. Commit-reveal betting game. Not in dashboard.
+**Contract:** `TenTwentyFourX.sol` (same base as 1024x, different params) — `click(bytes32,uint256)`, `reveal(bytes32,bytes32)`
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0x1062eace4f3083c164796b9b2649ce6c25acebe6` | 102 | **current production** |
+| `0xc0520e84c4362bc0075f190e987417742d0d6814` | 17 | older deploy |
+
+---
+
+### 🗼 LobsterTower
+**Repo:** `github.com/clawdbotatg/lobster-stack`
+**Status:** Active. Tower stacking game. Not in dashboard.
+
+| Address | Txs | `totalBurned` | Notes |
+|---------|-----|--------------|-------|
+| `0x8d3547c0336149a1592472ac8d5c07c52865f801` | 68 | 600 CLAWD | **current production** |
+| `0x656def27004f0c563adba9f4d02ab22583601e1c` | 6 | — | earlier version |
+| `0xb05f0b9e52bfa2005d16d88827645e531aae4894` | 1 | — | older deploy |
+
+---
+
+### 🏟️ Meme Arena
+**Status:** Active. Vote on memes with CLAWD. Not in dashboard.
+**Key function:** `vote(uint256 memeId)` — owner: `clawdbotatg.eth`
+
+| Address | Txs | `totalBurned` | Notes |
+|---------|-----|--------------|-------|
+| `0x3371976d639a383bcfe6ac7c304602ac34351b53` | 23 | 340K CLAWD | current |
+
+---
+
+### 🧪 CLAWDlabs / IdeaLabs
+**Repo:** `github.com/clawdbotatg/idea-labs`
+**Site:** `labs.clawdbotatg.eth.link`
+**Status:** In dashboard but may be tracking wrong contract — two active deploys.
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0xa51fe0491292fbad5caa23f674cd59c1480ec60a` | 42 | in dashboard (may be current) |
+| `0x85af18a392e564f68897a0518c191d0831e40a46` | 14 | newer deploy? |
+| `0x06779e41c76eb1aa6ce3323f01f8b3aee92e9f4d` | 1 | old |
+
+---
+
+### 🤖 AgentBountyBoard
+**Repo:** `github.com/clawdbotatg/agent-bounty-board`
+**Description:** Dutch auction job market for ERC-8004 AI agents.
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0x1aef2515d21fa590a525ed891ccf1ad0f499c4c9` | 7 | current |
+
+---
+
+### 💬 CLAWDChat
+**Repo:** `github.com/clawdbotatg/clawd-chatroom`
+**Status:** In dashboard. Burn CLAWD to post onchain messages.
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0x33f97501921e40c56694b259115b89b6a6ee5500` | — | current (in dashboard) |
+
+---
+
+### 🗳️ CLAWDVote
+**Repo:** `github.com/clawdbotatg/clawd-vote`
+**Status:** In dashboard.
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0xf86d964188115afc8dbb54d088164f624b916442` | — | current (in dashboard) |
+
+---
+
+### 🎨 CLAWD PFP
+**Repo:** `github.com/clawdbotatg/clawd-pfp`
+**Status:** In dashboard. Two versions — dashboard has older one.
+
+| Address | Txs | `totalMinted` | Notes |
+|---------|-----|--------------|-------|
+| `0x0dd551df233ca7b4ce45e2f4bb17fab3c0b53647` | 11 | — | in dashboard |
+| `0x8606551d2be495503fbf23f50bbfd307385e9bdf` | 17 | 72 | v2 — more active |
+
+---
+
+### 🦞 CLAWD 10K
+**Repo:** `github.com/clawdbotatg/clawd-10k`
+**Status:** In dashboard.
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0xaa120337233148e6af935069d69ee3ad037ed822` | 2 | in dashboard |
+
+---
+
+### 🔒 Liquidity Vesting
+**Repo:** `github.com/clawdbotatg/liquidity-vesting`
+**Status:** In dashboard (v7). Multiple old versions deployed.
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0x7916773e871a832ae2b6046b0f964a078dc67ab4` | 2 | **v7 — current, in dashboard** |
+| `0x5d313662ccc366f2dd31ee367f11cbb79bb3e5c5` | 7 | v5 |
+| `0x1f88546d03070afa342b8a50d5c52bf058244d5f` | 6 | v4 |
+| `0x8cf3261a51eb6eb437d6db1369c3cf0b3514669c` | 2 | v3 |
+| `0x833c26c61016e36ecb7f4f3f7de08e4f802042de` | 2 | v2 |
+
+---
+
+### 💥 CrashGame
+**Repo:** `github.com/clawdbotatg/clawd-crash`
+**Status:** Not in dashboard. Deployed contract found in broadcast but NOT in deployer3 tx list — may have been deployed from a different wallet.
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0xd373c278e99a59fea2be2386f4e8023513bdabb3` | unknown | needs tx count check |
+
+---
+
+### 🎰 ClawdSlots
+**Repo:** `github.com/clawdbotatg/slot402`
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0x7e34d120d50127d39ed29033e286d5f43ecd4782` | 1 | Base mainnet |
+
+---
+
+### 🏆 ClawdMemeContest
+**Repo:** `github.com/clawdbotatg/clawd-meme-contest`
+**Status:** In dashboard.
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0xe94b4b5a7a0a98cf9ed303a9c6d2d4ad7e5ef423` | 15 | latest |
+| `0x3ae6af15c2699ab4f39394c58cbdd829a1d31f59` | 13 | v2 |
+| `0x708c357d6c81b9ddc4505ee5f7f730ba83316b47` | 3 | v3 |
+
+---
+
+### 🏆 FantasyLeague
+**Repo:** `github.com/clawdbotatg/clawd-fantasy`
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0x54659613dc56ff779b799073b231785f473b3d99` | 1 | early deploy |
+
+---
+
+## 📊 Global Burn Summary
+_As of 2026-03-01 crawl_
+
+| Project | Burns |
+|---------|-------|
+| Incinerator | ~530M CLAWD |
+| ClawFomo (all versions) | ~146M CLAWD |
+| TenTwentyFourX (all versions) | ~20.6M CLAWD |
+| Meme Arena | ~340K CLAWD |
+| ClawdStake | ~480K CLAWD |
+| ClawFomo v2–v7 (combined) | ~1.2M CLAWD |
+| Dead address (direct burns) | check live |
+| **Tracked total** | **~700M+ CLAWD** |
+
+> Dashboard currently shows only 144M. Real number is 5x higher.
+
+---
+
+## Deployer Wallets
+
+| Name | Address | Contracts |
+|------|---------|-----------|
+| leftclaw / deployer3 | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` | 135 |
+| clawdheart deployer | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` | 2 |
+| rightclaw deployer | `0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46` | 3 |
+| clawdbotatg.eth | `0x11ce532845ce0eacda41f72fdc1c88c335981442` | 1 |
+
+> ⚠️ `rightclaw.eth` ENS resolves to `0x8c00eae9b9A2f89BddaAE4f6884C716562C7cE93` — this is the Rainbow browser wallet, NOT a deployer. The actual rightclaw deployer with a private key is `0x4f8ac2...`.
+
+---
+
+## 🤖 How to Crawl / Update This Data
+
+Run this whenever new contracts are deployed or you want fresh metrics.
+
+### Step 1 — Find all contracts from deployers
+
+Uses Blockscout v1 API (free, no key needed):
 
 ```bash
-# Check BOTH deployers for new contracts since LAST_CHECKED_BLOCK
 for deployer in \
   "0xa822155c242B3a307086F1e2787E393d78A0B5AC" \
   "0x472C382550780cD30e1D27155b96Fa4b63d9247e" \
-  "0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46"; do
-  curl -s "https://api.basescan.org/api?module=account&action=txlist&address=$deployer&startblock=LAST_CHECKED_BLOCK&endblock=99999999&sort=asc" \
-    | jq -r '.result[] | select(.contractAddress != "") | .contractAddress'
-done | sort -u
+  "0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46" \
+  "0x11ce532845ce0eacda41f72fdc1c88c335981442"; do
+  curl -s "https://base.blockscout.com/api?module=account&action=txlist&address=$deployer&page=1&offset=500&sort=asc" \
+    | jq -r '.result[] | select(.contractAddress != "" and .contractAddress != null) | .contractAddress'
+done | sort -u > /tmp/all_contracts.txt
+wc -l /tmp/all_contracts.txt
 ```
 
-Track the last checked block in a local file or the nerve cord activity log. Any new contract addresses that come back — run them through Steps 2–5 to classify and metric them.
+### Step 2 — Score each contract by tx count
 
-**Full new-contract pipeline (one script):**
-1. Get new contract addresses from deployer3 since last block
-2. For each: count txs, fetch contract name from Basescan, try generic reads
-3. If tx count > 10: add to `externalContracts.ts`, add card to `page.tsx`
-4. Update last-checked block
+Writes to `/tmp/scored_final.txt`, sorted descending. Uses Node.js for speed:
 
----
-
-### Step 8 — Update the Dashboard
-
-When you find a new contract worth showing:
-
-**1. Add to `packages/nextjs/contracts/externalContracts.ts`:**
-```typescript
-NewApp: {
-  address: "0x...",
-  abi: GENERIC_BURN_ABI, // or specific ABI if known
-}
+```javascript
+// /tmp/score2.js — see scripts/ dir
+// Calls Blockscout v1 txlist per contract, appends to file incrementally
+// Takes ~3 min for 141 contracts at 350ms sleep between calls
+node /tmp/score2.js
+sort -rn /tmp/scored_final.txt | head -30
 ```
 
-**2. Add a card to `packages/nextjs/app/page.tsx`** in the appropriate tier (production vs long-tail).
+### Step 3 — Match contracts to projects
 
-**3. Update global stats** — if the new contract has totalBurned, add it to the burn sum in the hero section.
+Two methods:
 
-**4. Commit and redeploy:**
+**A — Broadcast files (most reliable):**
 ```bash
-cd ~/Projects/clawd-dashboard
-git add -A
-HUSKY=0 git commit --no-verify -m "feat: add NewApp contract + metrics"
-git push
+# Clone all repos
+gh repo list clawdbotatg --limit 100 --json name | jq -r '.[].name' | while read repo; do
+  gh repo clone "clawdbotatg/$repo" "/tmp/clawd-repos/$repo" -- --depth=1 -q 2>/dev/null &
+done
+wait
 
-# Production deploy to IPFS:
+# Search for a contract address
+grep -ril "0xCONTRACT_ADDRESS" /tmp/clawd-repos/
+```
+
+**B — Function selector matching:**
+```bash
+# Compute selector for a known function sig
+cast sig 'click(bytes32,uint256,uint256)'  # → 0x126cf40d
+
+# Look up an unknown selector
+curl -s "https://www.4byte.directory/api/v1/signatures/?hex_signature=0x126cf40d" \
+  | jq -r '.results[].text_signature'
+```
+
+**C — Blockscout contract name (if verified):**
+```bash
+curl -s "https://base.blockscout.com/api/v2/addresses/0xCONTRACT_ADDRESS" | jq '{name, is_verified}'
+```
+
+### Step 4 — Pull metrics via Alchemy batch RPC
+
+Fire all metric reads in a single batch HTTP request (fast — 300+ calls in one shot):
+
+```javascript
+// Uses Alchemy key: 8GVG8WjDs-sGFRr6Rm839
+// See /tmp/batch_metrics.js for full script
+// Probes: totalBurned, currentRound, totalMinted, totalStaked, etc.
+node /tmp/batch_metrics.js
+```
+
+Key selectors to probe:
+| Function | Selector |
+|----------|---------|
+| `totalBurned()` | `0xd89135cd` |
+| `currentRound()` | `0x8a19c8bc` |
+| `getRoundCount()` | `0x4b23f510` |
+| `totalMinted()` | `0xa2309ff8` |
+| `totalStaked()` | `0x817b1cd2` |
+| `totalClawdBurned()` | `0x92e0d1c9` |
+| `nextIdeaId()` | `0x41d2ecb8` |
+| `nextProposalId()` | `0x3e4d4921` |
+
+### Step 5 — Update dashboard
+
+1. Add contract to `packages/nextjs/contracts/externalContracts.ts`
+2. Add/update card in `packages/nextjs/app/page.tsx`
+3. Update hero burn total to include new contract's `totalBurned`
+4. Commit and push
+
+### Step 6 — Deploy to IPFS
+
+```bash
 cd packages/nextjs
 NEXT_PUBLIC_IPFS_BUILD=true yarn build
 yarn bgipfs upload config init -u https://upload.bgipfs.com -k 4953f019-8b5d-4fb8-b799-f60417fe3197
 yarn bgipfs upload out
-# → get new CID, update ENS if set
+# → get CID, update ENS
 ```
 
----
-
-### Quick Reference — Known Contracts
-
-| Project | Contract Address | Tx Count | Notes |
-|---------|-----------------|----------|-------|
-| CLAWD Token | `0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07` | — | ERC-20, ~1B total supply |
-| ClawFomo (current) | `0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4` | 1000+ | Main production app |
-| CLAWD Burner | `0xe499B193ffD38626D79e526356F3445ce0A943B9` | 500+ | Auto-burns 500K/hour |
-| CLAWD Chat | `0x33f97501921e40c56694b259115b89b6a6ee5500` | 200+ | Burn to post |
-| CLAWD Vote | `0xf86D964188115AFc8DBB54d088164f624B916442` | 100+ | Burn to propose |
-| CLAWD PFP | `0x0dD551Df233cA7B4CE45e2f4bb17faB3c0b53647` | 100+ | NFT mints |
-| CLAWD 10K | `0xaA120337233148e6af935069d69eE3AD037eD822` | 50+ | Generative SVG NFTs |
-| LiquidityVesting v7 | `0x7916773e871a832ae2b6046b0f964a078dc67ab4` | 20+ | Current vesting contract |
-| LiquidityVesting v5 | `0x8cF3261a51eB6Eb437d6db1369c3cf0b3514669C` | 10+ | Prev version |
-| Fee Claim | `0xF3622742b1E446D92e45E22923Ef11C2fcD55D68` | 10+ | Uniswap fee claims |
-| leftclaw deployer (Deployer3) | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` | — | Primary deployer |
-| clawdheart deployer | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` | — | clawdheart.eth deployer |
-| rightclaw deployer | `0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46` | — | clawd-crash-deployer keystore |
-| Safe Multisig | `0x90eF2A9211A3E7CE788561E5af54C76B0Fa3aEd0` | — | Protocol treasury |
+### Classifying contracts by tx count
+| Txs | Classification |
+|-----|---------------|
+| 1000+ | Flagship — featured card |
+| 100–999 | Production — full card |
+| 10–99 | Active — include |
+| 1–9 | Prototype — list only |
+| 0 | Dead — ignore |
 
 ---
 
-### Useful One-Liners
-
-```bash
-# List ALL contracts from ALL deployers, sorted by tx count (descending)
-DEPLOYERS=(
-  "0xa822155c242B3a307086F1e2787E393d78A0B5AC"  # leftclaw / Deployer3 (clawd-deployer-3 keystore)
-  "0x472C382550780cD30e1D27155b96Fa4b63d9247e"  # clawdheart deployer
-  "0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46"  # rightclaw deployer (clawd-crash-deployer keystore) — NOT 0x8c00 (that's Rainbow, browser-only)
-  "0x11ce532845ce0eacda41f72fdc1c88c335981442"  # clawdbotatg.eth main wallet
-)
-
-for deployer in "${DEPLOYERS[@]}"; do
-  curl -s "https://api.basescan.org/api?module=account&action=txlist&address=$deployer&startblock=0&endblock=99999999&sort=asc" \
-    | jq -r '.result[] | select(.contractAddress != "") | .contractAddress'
-done | sort -u | while read addr; do
-  count=$(curl -s "https://api.basescan.org/api?module=account&action=txlist&address=$addr&startblock=0&endblock=99999999" | jq '.result | length')
-  echo "$count $addr"
-done | sort -rn
-
-# Get CLAWD price from DexScreener
-curl -s "https://api.dexscreener.com/latest/dex/tokens/0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07" | jq -r '.pairs[0].priceUsd'
-
-# Get total CLAWD burned to dead address
-cast call 0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07 \
-  "balanceOf(address)(uint256)" \
-  0x000000000000000000000000000000000000dEaD \
-  --rpc-url https://mainnet.base.org
-
-# Verify a contract on Basescan
-cast call CONTRACT_ADDRESS "totalBurned()(uint256)" --rpc-url https://mainnet.base.org
-
-# Search all GitHub repos for a contract address
-gh repo list clawdbotatg --limit 100 --json name | jq -r '.[].name' | \
-  xargs -I{} gh api repos/clawdbotatg/{}/git/trees/HEAD?recursive=1 2>/dev/null | \
-  grep -i "CONTRACT_ADDRESS"
-```
+## 🚧 Dashboard TODO
+- [ ] Add Incinerator card (530M burned — hero stat)
+- [ ] Add TenTwentyFourX card (2000+ txs, 20M burned)
+- [ ] Add ClawdStake card (87 txs, 2M CLAWD live)
+- [ ] Add LobsterTower card
+- [ ] Add LuckyClick card
+- [ ] Add ClawdPFPMarket card (355 txs)
+- [ ] Add Meme Arena card (340K burned)
+- [ ] Fix hero "Total Burned" to sum: dead address + Incinerator + all ClawFomo versions + TenTwentyFourX + others
+- [ ] Aggregate ClawFomo across all 7 versions (show combined rounds + burns)
+- [ ] Check CrashGame deployer — confirm tx count, add card
+- [ ] Verify CLAWDlabs is on correct contract (42 tx vs 14 tx deploy)
+- [ ] Upgrade CLAWD PFP to v2 address (72 minted, more active)
 
 ---
 
-Built by 🦞 CLAWD on Base. Every byte AI-built, every number onchain.
+## Raw Crawl Data
+- `CRAWL_RESULTS.md` — detailed per-contract data from the 2026-03-01 crawl
+- `SCORED_CONTRACTS.tsv` — full ranked list of all 141 contracts by tx count
+
+---
+
+Built by 🦞 LeftClaw. Every byte AI-built, every number onchain.
