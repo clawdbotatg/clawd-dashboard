@@ -53,9 +53,10 @@ Open http://localhost:3000
 |------|---------|
 | CLAWD Token | `0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07` |
 | Dead (burn sink) | `0x000000000000000000000000000000000000dEaD` |
-| Deployer3 | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` |
-| clawdheart.eth | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` |
-| rightclaw.eth | `0x8c00eae9b9A2f89BddaAE4f6884C716562C7cE93` |
+| leftclaw Deployer3 | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` |
+| clawdheart deployer | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` |
+| rightclaw deployer | `0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46` |
+| rightclaw.eth (Rainbow, browser-only) | `0x8c00eae9b9A2f89BddaAE4f6884C716562C7cE93` |
 | ClawFomo | `0x859E5CB97E1Cf357643A6633D5bEC6d45e44cFD4` |
 | Safe Multisig | `0x90eF2A9211A3E7CE788561E5af54C76B0Fa3aEd0` |
 
@@ -71,12 +72,14 @@ This section documents the full process for discovering, mapping, and measuring 
 
 There are **two deployer addresses** that have shipped CLAWD contracts. Check both every time.
 
-| Deployer | Address | ENS | Notes |
-|----------|---------|-----|-------|
-| Deployer3 | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` | — | Primary deployer, most contracts |
-| clawdheart.eth | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` | clawdheart.eth | Second deployer |
-| rightclaw.eth | `0x8c00eae9b9A2f89BddaAE4f6884C716562C7cE93` | rightclaw.eth | Third deployer |
-| Main wallet | `0x11ce532845ce0eacda41f72fdc1c88c335981442` | clawdbotatg.eth | Occasional direct deploys |
+| Deployer | Address | Keystore | Notes |
+|----------|---------|----------|-------|
+| leftclaw deployer (Deployer3) | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` | `clawd-deployer-3` | Primary — most contracts |
+| clawdheart deployer | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` | — | clawdheart.eth |
+| rightclaw deployer | `0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46` | `clawd-crash-deployer` | rightclaw script deployer |
+| Main wallet | `0x11ce532845ce0eacda41f72fdc1c88c335981442` | — | clawdbotatg.eth, occasional deploys |
+
+> ⚠️ `rightclaw.eth` ENS resolves to `0x8c00eae9b9A2f89BddaAE4f6884C716562C7cE93` (Rainbow browser wallet) — this is NOT a deployer. The actual rightclaw deployer with a scriptable private key is `0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46`.
 
 Get every contract creation transaction from each deployer:
 
@@ -242,7 +245,7 @@ To discover new contracts deployed after your last crawl, just filter by block n
 for deployer in \
   "0xa822155c242B3a307086F1e2787E393d78A0B5AC" \
   "0x472C382550780cD30e1D27155b96Fa4b63d9247e" \
-  "0x8c00eae9b9A2f89BddaAE4f6884C716562C7cE93"; do
+  "0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46"; do
   curl -s "https://api.basescan.org/api?module=account&action=txlist&address=$deployer&startblock=LAST_CHECKED_BLOCK&endblock=99999999&sort=asc" \
     | jq -r '.result[] | select(.contractAddress != "") | .contractAddress'
 done | sort -u
@@ -305,9 +308,9 @@ yarn bgipfs upload out
 | LiquidityVesting v7 | `0x7916773e871a832ae2b6046b0f964a078dc67ab4` | 20+ | Current vesting contract |
 | LiquidityVesting v5 | `0x8cF3261a51eB6Eb437d6db1369c3cf0b3514669C` | 10+ | Prev version |
 | Fee Claim | `0xF3622742b1E446D92e45E22923Ef11C2fcD55D68` | 10+ | Uniswap fee claims |
-| Deployer3 | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` | — | Primary deployer |
-| clawdheart.eth | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` | — | Second deployer |
-| rightclaw.eth | `0x8c00eae9b9A2f89BddaAE4f6884C716562C7cE93` | — | Third deployer |
+| leftclaw deployer (Deployer3) | `0xa822155c242B3a307086F1e2787E393d78A0B5AC` | — | Primary deployer |
+| clawdheart deployer | `0x472C382550780cD30e1D27155b96Fa4b63d9247e` | — | clawdheart.eth deployer |
+| rightclaw deployer | `0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46` | — | clawd-crash-deployer keystore |
 | Safe Multisig | `0x90eF2A9211A3E7CE788561E5af54C76B0Fa3aEd0` | — | Protocol treasury |
 
 ---
@@ -317,9 +320,9 @@ yarn bgipfs upload out
 ```bash
 # List ALL contracts from ALL deployers, sorted by tx count (descending)
 DEPLOYERS=(
-  "0xa822155c242B3a307086F1e2787E393d78A0B5AC"  # Deployer3
-  "0x472C382550780cD30e1D27155b96Fa4b63d9247e"  # clawdheart.eth
-  "0x8c00eae9b9A2f89BddaAE4f6884C716562C7cE93"  # rightclaw.eth
+  "0xa822155c242B3a307086F1e2787E393d78A0B5AC"  # leftclaw / Deployer3 (clawd-deployer-3 keystore)
+  "0x472C382550780cD30e1D27155b96Fa4b63d9247e"  # clawdheart deployer
+  "0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46"  # rightclaw deployer (clawd-crash-deployer keystore) — NOT 0x8c00 (that's Rainbow, browser-only)
   "0x11ce532845ce0eacda41f72fdc1c88c335981442"  # clawdbotatg.eth main wallet
 )
 

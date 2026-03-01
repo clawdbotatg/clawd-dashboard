@@ -8,14 +8,15 @@ import { base } from "viem/chains";
 // ─── Constants ─────────────────────────────────────────────────────
 const CLAWD_TOKEN = "0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07" as const;
 const DEAD = "0x000000000000000000000000000000000000dEaD" as const;
-const DEPLOYER3    = "0xa822155c242B3a307086F1e2787E393d78A0B5AC" as const; // primary deployer
-const CLAWDHEART   = "0x472C382550780cD30e1D27155b96Fa4b63d9247e" as const; // clawdheart.eth
-const RIGHTCLAW    = "0x8c00eae9b9A2f89BddaAE4f6884C716562C7cE93" as const; // rightclaw.eth
+const DEPLOYER3          = "0xa822155c242B3a307086F1e2787E393d78A0B5AC" as const; // leftclaw deployer (clawd-deployer-3 keystore)
+const CLAWDHEART_DEPLOYER = "0x472C382550780cD30e1D27155b96Fa4b63d9247e" as const; // clawdheart.eth deployer
+const RIGHTCLAW_DEPLOYER  = "0x4f8ac2faa3cacacacb7b4997a48f377fe88dfd46" as const; // rightclaw deployer (clawd-crash-deployer keystore)
+// Note: rightclaw.eth ENS (0x8c00...7cE93) is a Rainbow browser wallet — cannot deploy via scripts
 
 const DEPLOYERS = [
-  { name: "deployer3",     ens: null,              address: DEPLOYER3,  desc: "Primary deployer" },
-  { name: "clawdheart",    ens: "clawdheart.eth",  address: CLAWDHEART, desc: "clawdheart.eth" },
-  { name: "rightclaw",     ens: "rightclaw.eth",   address: RIGHTCLAW,  desc: "rightclaw.eth" },
+  { name: "deployer3",          ens: null,             address: DEPLOYER3,           desc: "leftclaw primary deployer" },
+  { name: "clawdheart deployer", ens: "clawdheart.eth", address: CLAWDHEART_DEPLOYER, desc: "clawdheart.eth" },
+  { name: "rightclaw deployer",  ens: null,             address: RIGHTCLAW_DEPLOYER,  desc: "rightclaw deployer (clawd-crash-deployer)" },
 ] as const;
 
 const RPC = typeof window !== "undefined"
