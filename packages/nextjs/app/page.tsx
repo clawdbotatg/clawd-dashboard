@@ -8,7 +8,15 @@ import { base } from "viem/chains";
 // ─── Constants ─────────────────────────────────────────────────────
 const CLAWD_TOKEN = "0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07" as const;
 const DEAD = "0x000000000000000000000000000000000000dEaD" as const;
-const DEPLOYER3 = "0xa822155c242B3a307086F1e2787E393d78A0B5AC" as const;
+const DEPLOYER3    = "0xa822155c242B3a307086F1e2787E393d78A0B5AC" as const; // primary deployer
+const CLAWDHEART   = "0x472C382550780cD30e1D27155b96Fa4b63d9247e" as const; // clawdheart.eth
+const RIGHTCLAW    = "0x8c00eae9b9A2f89BddaAE4f6884C716562C7cE93" as const; // rightclaw.eth
+
+const DEPLOYERS = [
+  { name: "deployer3",     ens: null,              address: DEPLOYER3,  desc: "Primary deployer" },
+  { name: "clawdheart",    ens: "clawdheart.eth",  address: CLAWDHEART, desc: "clawdheart.eth" },
+  { name: "rightclaw",     ens: "rightclaw.eth",   address: RIGHTCLAW,  desc: "rightclaw.eth" },
+] as const;
 
 const RPC = typeof window !== "undefined"
   ? (process.env.NEXT_PUBLIC_BASE_RPC || "https://mainnet.base.org")
@@ -249,9 +257,11 @@ const Home: NextPage = () => {
         </div>
         <div className="flex items-center gap-4 text-xs text-gray-500">
           {lastUpdate && <span>Updated {lastUpdate.toLocaleTimeString()}</span>}
-          <a href={basescanAddr(DEPLOYER3)} target="_blank" rel="noopener noreferrer" className="hover:text-gray-300 transition-colors">
-            Deployer ↗
-          </a>
+          {DEPLOYERS.map(d => (
+            <a key={d.address} href={basescanAddr(d.address)} target="_blank" rel="noopener noreferrer" className="hover:text-gray-300 transition-colors">
+              {d.ens ?? d.name} ↗
+            </a>
+          ))}
         </div>
       </header>
 
@@ -354,6 +364,38 @@ const Home: NextPage = () => {
                   <div className="text-sm font-medium text-gray-300 group-hover:text-white truncate">{c.name}</div>
                   <div className="text-xs text-gray-600 truncate">{c.desc}</div>
                   <div className="text-xs text-gray-700 mt-1 font-mono">{shortAddr(c.address)}</div>
+                </a>
+              ))}
+            </div>
+
+            {/* ═══ DEPLOYER WALLETS ═══ */}
+            <SectionHeader emoji="🔑" title="Deployer Wallets" sub="Every CLAWD contract was deployed from one of these addresses" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+              {DEPLOYERS.map(d => (
+                <a
+                  key={d.address}
+                  href={`https://basescan.org/address/${d.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl p-5 border border-gray-800/50 hover:border-gray-600 transition-colors flex flex-col gap-2 group"
+                  style={{ background: "#111118" }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm group-hover:text-white transition-colors">
+                      {d.ens ?? d.name}
+                    </span>
+                    <span className="text-xs text-gray-600">↗ Basescan</span>
+                  </div>
+                  <span className="font-mono text-xs text-gray-500 break-all">{d.address}</span>
+                  <a
+                    href={`https://basescan.org/txs?a=${d.address}&type=2`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="text-xs text-red-400/70 hover:text-red-400 transition-colors w-fit"
+                  >
+                    View contract deploys ↗
+                  </a>
                 </a>
               ))}
             </div>
