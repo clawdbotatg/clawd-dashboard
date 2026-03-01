@@ -1,7 +1,7 @@
 // Batch all contract metric reads via Alchemy JSON-RPC batching
 // Uses precomputed 4-byte selectors (keccak256 first 4 bytes)
 const https = require('https');
-const RPC = 'https://base-mainnet.g.alchemy.com/v2/8GVG8WjDs-sGFRr6Rm839';
+const RPC = process.env.ALCHEMY_RPC || 'https://mainnet.base.org'; // set ALCHEMY_RPC=https://base-mainnet.g.alchemy.com/v2/<key>
 
 const CONTRACTS = [
   { addr: '0xef2f6d7020f4b088fee65d5369bc792d7b2f40fc', name: 'unknown-1000tx' },

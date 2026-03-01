@@ -18,7 +18,7 @@ cp .env.local.example .env.local  # add NEXT_PUBLIC_BASE_RPC=https://base-mainne
 yarn dev
 ```
 
-Alchemy key: `8GVG8WjDs-sGFRr6Rm839` (in `.env.local` only, never commit)
+Alchemy key: in `.env.local` only — never commit. Ask Austin or check TOOLS.md.
 
 ---
 
@@ -79,8 +79,10 @@ _Updated: 2026-03-01 via full deployer crawl_
 | `0xd4f419065ee4b89ef8f9b2c224a9ebdee62abf54` | 52 | 43K CLAWD | 26 | v5 |
 | `0xa5cd6e15f91ae84f5513a60c398f3c5e4c43e399` | 23 | 11.9K CLAWD | 3 | v6 |
 | `0x23f44c39f417f16807643fc8eb3435c3e47e1a32` | 16 | 9K CLAWD | 6 | v7 |
+| `0xFFc46a347a0A037064d4A53445797770E24A3887` | 1 | 0 | 1 | v0 — early test, never used |
 
 **Aggregated totals:** ~1500 txs · ~146M CLAWD burned · 323 rounds (current only, others retired)
+> v0 `0xFFc4...` noted in nerve cord priority as "old contract" — confirmed unused (0 burns, round 1).
 
 ---
 
@@ -172,6 +174,21 @@ _Updated: 2026-03-01 via full deployer crawl_
 | `0xa51fe0491292fbad5caa23f674cd59c1480ec60a` | 42 | in dashboard (may be current) |
 | `0x85af18a392e564f68897a0518c191d0831e40a46` | 14 | newer deploy? |
 | `0x06779e41c76eb1aa6ce3323f01f8b3aee92e9f4d` | 1 | old |
+
+---
+
+### 🧠 ClawdViction
+**Repo:** `github.com/clawdbotatg/clawdviction`
+**Description:** AI-powered conviction governance — stake CLAWD, get a personal AI agent, train it to vote on your behalf.
+**Built by:** clawdheart (deployed from clawdheart deployer `0x472C...`)
+**Status:** Production tested. Not in dashboard.
+
+| Address | Txs | Notes |
+|---------|-----|-------|
+| `0xaf206d40f293f5892ce86986baff5bb426a188a1` | 16 | v1 |
+| `0xfe69980a1203d664488a73ae806514d2a04c1f8a` | 10 | v2 current (post-audit fixes by clawdheart) |
+
+> Audit by leftclaw + fixes by clawdheart: removed redundant totalActiveStaked, added emergencyWithdraw, MIN_STAKE 1000 CLAWD, 9 forge tests passing.
 
 ---
 
@@ -379,7 +396,7 @@ curl -s "https://base.blockscout.com/api/v2/addresses/0xCONTRACT_ADDRESS" | jq '
 Fire all metric reads in a single batch HTTP request (fast — 300+ calls in one shot):
 
 ```javascript
-// Uses Alchemy key: 8GVG8WjDs-sGFRr6Rm839
+// Uses Alchemy key from NEXT_PUBLIC_BASE_RPC env var
 // See /tmp/batch_metrics.js for full script
 // Probes: totalBurned, currentRound, totalMinted, totalStaked, etc.
 node /tmp/batch_metrics.js
@@ -409,7 +426,7 @@ Key selectors to probe:
 ```bash
 cd packages/nextjs
 NEXT_PUBLIC_IPFS_BUILD=true yarn build
-yarn bgipfs upload config init -u https://upload.bgipfs.com -k 4953f019-8b5d-4fb8-b799-f60417fe3197
+yarn bgipfs upload config init -u https://upload.bgipfs.com -k <BGIPFS_API_KEY>
 yarn bgipfs upload out
 # → get CID, update ENS
 ```
@@ -433,6 +450,7 @@ yarn bgipfs upload out
 - [ ] Add LuckyClick card
 - [ ] Add ClawdPFPMarket card (355 txs)
 - [ ] Add Meme Arena card (340K burned)
+- [ ] Add ClawdViction card (built by clawdheart — AI conviction staking)
 - [ ] Fix hero "Total Burned" to sum: dead address + Incinerator + all ClawFomo versions + TenTwentyFourX + others
 - [ ] Aggregate ClawFomo across all 7 versions (show combined rounds + burns)
 - [ ] Check CrashGame deployer — confirm tx count, add card
