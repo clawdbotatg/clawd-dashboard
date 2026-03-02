@@ -1,16 +1,13 @@
 import type { Metadata } from "next";
 
 const baseUrl = process.env.NEXT_PUBLIC_PRODUCTION_URL
-  ? process.env.NEXT_PUBLIC_PRODUCTION_URL
-  : process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : `http://localhost:${process.env.PORT || 3000}`;
+  || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://dashboard.clawdbotatg.eth.link");
 const titleTemplate = "%s | CLAWD Dashboard";
 
 export const getMetadata = ({
   title,
   description,
-  imageRelativePath = "/thumbnail.jpg",
+  imageRelativePath = "/thumbnail.png",
 }: {
   title: string;
   description: string;
@@ -22,7 +19,7 @@ export const getMetadata = ({
     title: { default: title, template: titleTemplate },
     description,
     openGraph: { title: { default: title, template: titleTemplate }, description, images: [{ url: imageUrl }] },
-    twitter: { title: { default: title, template: titleTemplate }, description, images: [imageUrl] },
+    twitter: { card: "summary_large_image", title: { default: title, template: titleTemplate }, description, images: [imageUrl] },
     icons: { icon: [{ url: "/favicon.png", sizes: "32x32", type: "image/png" }] },
   };
 };
