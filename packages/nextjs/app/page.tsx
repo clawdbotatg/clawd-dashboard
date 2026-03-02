@@ -460,14 +460,11 @@ const Home: NextPage = () => {
         ) : data ? (
           <>
             {/* ═══ HERO STATS — ROW 1 ═══ */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
               <StatCard label="🔗 Onchain Txs" value={data.totalTxs.toLocaleString()} />
               <StatCard label="🔥 Total Burned" value={fmt(data.totalBurnedAll)} sub={`${burnedPct}% of supply`} accent />
               <StatCard label="💰 USD Burned" value={fmtUsd(parseFloat(formatUnits(data.totalBurnedAll, 18)) * data.clawdPrice)} />
               <StatCard label="📈 CLAWD Price" value={data.clawdPrice > 0 ? `$${data.clawdPrice.toFixed(8)}` : "—"} />
-              <StatCard label="🏛️ FDV" value={data.fdv > 0 ? fmtUsd(data.fdv) : "—"} />
-              <StatCard label="🎮 Fomo Rounds" value={data.fomoTotalRoundsCurrent.toString()} accent />
-              <StatCard label="🏦 CLAWD Staked" value={fmt(data.stakeTotal)} />
               <StatCard label="🏠 Contracts" value={CONTRACTS_DEPLOYED.toString()} />
             </div>
 
