@@ -49,6 +49,9 @@ const LUCKY_CLICK = "0x1062eace4f3083c164796b9b2649ce6c25acebe6" as const;
 const LOBSTER_TOWER = "0x8d3547c0336149a1592472ac8d5c07c52865f801" as const;
 const MEME_ARENA = "0x3371976d639a383bcfe6ac7c304602ac34351b53" as const;
 const CLAWD_VICTION = "0xfe69980a1203d664488a73ae806514d2a04c1f8a" as const;
+const MEME_CONTEST = "0xe94b4b5a7a0a98cf9ed303a9c6d2d4ad7e5ef423" as const;
+const PFP_V2 = "0x8606551d2be495503fbf23f50bbfd307385e9bdf" as const;
+const CONTRACTS_DEPLOYED = 141; // hardcoded from deployer crawl
 
 // ─── ABIs ──────────────────────────────────────────────────────────
 const erc20Abi = parseAbi([
@@ -67,6 +70,9 @@ const totalStakedAbi = parseAbi(["function totalStaked() view returns (uint256)"
 const nextProposalIdAbi = parseAbi(["function nextProposalId() view returns (uint256)"]);
 const nextIdeaIdAbi = parseAbi(["function nextIdeaId() view returns (uint256)"]);
 const totalMintedAbi = parseAbi(["function totalMinted() view returns (uint256)"]);
+const totalStakersAbi = parseAbi(["function totalStakers() view returns (uint256)"]);
+const totalBetsAbi = parseAbi(["function totalBets() view returns (uint256)"]);
+const currentRoundAbi = parseAbi(["function currentRound() view returns (uint256)"]);
 const isLockedAbi = parseAbi(["function isLocked() view returns (bool)"]);
 
 // ─── Contract Registry ─────────────────────────────────────────────
@@ -219,6 +225,12 @@ interface DashData {
   // Vesting
   vestLocked: boolean;
   vestClawdBal: bigint;
+  // New all-time metrics
+  memeContestBurned: bigint;
+  totalStakers: bigint;
+  totalBets: bigint;
+  pfpV2Minted: bigint;
+  fomoTotalRoundsCurrent: bigint;
   // Aggregated total burn
   totalBurnedAll: bigint;
 }
@@ -288,6 +300,20 @@ const Home: NextPage = () => {
         safeRead(LOBSTER_TOWER, totalBurnedAbi, "totalBurned"),
       ]);
 
+      // New all-time metrics reads
+      const [totalStakers, totalBets, pfpV2Minted, memeContestBurned] = await Promise.all([
+        safeRead(CLAWD_STAKE, totalStakersAbi, "totalStakers"),
+        safeRead(LUCKY_CLICK, totalBetsAbi, "totalBets"),
+        safeRead(PFP_V2, totalMintedAbi, "totalMinted"),
+        safeRead(MEME_CONTEST, totalBurnedAbi, "totalBurned"),
+      ]);
+
+      // Fomo rounds via currentRound() for accurate count
+      const fomoRoundResults = await Promise.all(
+        CLAWFOMO_VERSIONS.map(addr => safeRead(addr, currentRoundAbi, "currentRound"))
+      );
+      const fomoTotalRoundsCurrent = fomoRoundResults.reduce((s, v) => s + v, 0n);
+
       // Existing utility reads
       const [chatBurned, voteBurned, voteProposals, pfpBurned, pfpMinted, tenKBurned, tenKMinted, labsIdeas, vestLocked, vestBal] = await Promise.all([
         safeRead("0x33f97501921e40c56694b259115b89b6a6ee5500", totalBurnedAbi, "totalBurned"),
@@ -302,8 +328,8 @@ const Home: NextPage = () => {
         client.readContract({ address: CLAWD_TOKEN, abi: erc20Abi, functionName: "balanceOf", args: ["0x7916773e871a832ae2b6046b0f964a078dc67ab4"] }),
       ]);
 
-      // Aggregated total burn
-      const totalBurnedAll = deadBal + incBurned + fomoTotalBurned + tenTwentyFourXBurned + stakeBurned + memeArenaBurned + luckyClickBurned + lobsterTowerBurned;
+      // Aggregated total burn (ALL sources)
+      const totalBurnedAll = deadBal + incBurned + fomoTotalBurned + tenTwentyFourXBurned + stakeBurned + memeArenaBurned + luckyClickBurned + lobsterTowerBurned + chatBurned + voteBurned + pfpBurned + tenKBurned + memeContestBurned;
 
       // Fetch price from DexScreener
       let price = 0, fdv = 0;
@@ -343,6 +369,11 @@ const Home: NextPage = () => {
         labsIdeas,
         vestLocked,
         vestClawdBal: vestBal,
+        memeContestBurned,
+        totalStakers,
+        totalBets,
+        pfpV2Minted,
+        fomoTotalRoundsCurrent,
         totalBurnedAll,
       });
       setLastUpdate(new Date());
@@ -391,15 +422,24 @@ const Home: NextPage = () => {
           </div>
         ) : data ? (
           <>
-            {/* ═══ HERO STATS ═══ */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-10">
+            {/* ═══ HERO STATS — ROW 1 ═══ */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-3">
               <StatCard label="🔥 Total Burned" value={fmt(data.totalBurnedAll)} sub={`${burnedPct}% of supply`} accent />
               <StatCard label="💰 USD Burned" value={fmtUsd(parseFloat(formatUnits(data.totalBurnedAll, 18)) * data.clawdPrice)} />
               <StatCard label="📈 CLAWD Price" value={data.clawdPrice > 0 ? `$${data.clawdPrice.toFixed(8)}` : "—"} />
               <StatCard label="🏛️ FDV" value={data.fdv > 0 ? fmtUsd(data.fdv) : "—"} />
-              <StatCard label="🎮 Fomo Rounds" value={data.fomoTotalRounds.toString()} accent />
+              <StatCard label="🎮 Fomo Rounds" value={data.fomoTotalRoundsCurrent.toString()} accent />
               <StatCard label="🏦 CLAWD Staked" value={fmt(data.stakeTotal)} />
-              <StatCard label="🏠 Contracts" value={totalContracts.toString()} />
+              <StatCard label="🏠 Contracts" value={CONTRACTS_DEPLOYED.toString()} />
+            </div>
+
+            {/* ═══ ALL-TIME METRICS — ROW 2 ═══ */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-10">
+              <StatCardSmall label="👥 Active Stakers" value={data.totalStakers.toString()} color="text-blue-400" />
+              <StatCardSmall label="💡 Ideas Submitted" value={data.labsIdeas.toString()} color="text-purple-400" />
+              <StatCardSmall label="🎰 Lucky Bets" value={data.totalBets.toString()} color="text-purple-400" />
+              <StatCardSmall label="🖼 NFTs Minted" value={(data.pfpMinted + data.pfpV2Minted + data.tenKMinted).toString()} color="text-blue-400" />
+              <StatCardSmall label="🔒 Pending Burn" value={fmt(data.incineratorBalance)} sub="held in Incinerator" color="text-orange-400" />
             </div>
 
             {/* ═══ SECTION 1: FLAGSHIP APPS ═══ */}
@@ -605,6 +645,16 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string;
     <div className="rounded-xl p-4 border border-gray-800/50" style={{ background: "#111118" }}>
       <p className="text-xs text-gray-500 mb-1">{label}</p>
       <p className={`text-xl font-bold ${accent ? "text-red-400" : "text-white"}`}>{value}</p>
+      {sub && <p className="text-xs text-gray-600 mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+function StatCardSmall({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+  return (
+    <div className="rounded-xl p-3 border border-gray-800/30" style={{ background: "#0f0f18" }}>
+      <p className="text-xs text-gray-500 mb-0.5">{label}</p>
+      <p className={`text-lg font-bold ${color || "text-white"}`}>{value}</p>
       {sub && <p className="text-xs text-gray-600 mt-0.5">{sub}</p>}
     </div>
   );
