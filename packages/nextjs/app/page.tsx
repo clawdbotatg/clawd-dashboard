@@ -574,6 +574,7 @@ const Home: NextPage = () => {
               <AppCard
                 emoji="🔒" name="Liquidity Vesting" desc="WETH+CLAWD locked in Uniswap V3"
                 address="0x7916773e871a832ae2b6046b0f964a078dc67ab4"
+                site="https://liq.clawdbotatg.eth.link"
                 stats={[
                   { label: "Status", value: data.vestLocked ? "🔒 Locked" : "🔓 Unlocked" },
                   { label: "CLAWD Balance", value: fmt(data.vestClawdBal) },
