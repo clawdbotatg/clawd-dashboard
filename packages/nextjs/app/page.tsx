@@ -53,6 +53,36 @@ const MEME_CONTEST = "0xe94b4b5a7a0a98cf9ed303a9c6d2d4ad7e5ef423" as const;
 const PFP_V2 = "0x8606551d2be495503fbf23f50bbfd307385e9bdf" as const;
 const CONTRACTS_DEPLOYED = 141; // hardcoded from deployer crawl
 
+// ─── Top 10 contracts for tx count ─────────────────────────────────
+const TX_COUNT_CONTRACTS = [
+  "0x859e5cb97e1cf357643a6633d5bec6d45e44cfd4",
+  "0xaa7466fa805e59f06c83befb2b4e256a9b246b04",
+  "0xef2f6d7020f4b088fee65d5369bc792d7b2f40fc",
+  "0xa37c70168201c290cbefcbda95daa779f0dba305",
+  "0x861e96c70a94cdebfb3fb89f3a96fe16b5e31891",
+  "0x536453350f2eee2eb8bfee1866baf4fca494a092",
+  "0x6b003f883c608bdad938cd6dc3730b17ac46e196",
+  "0x1062eace4f3083c164796b9b2649ce6c25acebe6",
+  "0x90552946edd5a6bad7647655da6c805a188dfd25",
+  "0x8d3547c0336149a1592472ac8d5c07c52865f801",
+] as const;
+const TX_COUNT_REST = 852; // remaining ecosystem contracts (known from crawl)
+
+async function fetchTxCount(addr: string): Promise<number> {
+  try {
+    let total = 0, page = 1;
+    while (true) {
+      const res = await fetch(`https://base.blockscout.com/api?module=account&action=txlist&address=${addr}&page=${page}&offset=1000&sort=asc`);
+      const json = await res.json();
+      const count = (json.result || []).length;
+      total += count;
+      if (count < 1000) break;
+      page++;
+    }
+    return total;
+  } catch { return 0; }
+}
+
 // ─── ABIs ──────────────────────────────────────────────────────────
 const erc20Abi = parseAbi([
   "function balanceOf(address) view returns (uint256)",
@@ -233,6 +263,8 @@ interface DashData {
   fomoTotalRoundsCurrent: bigint;
   // Aggregated total burn
   totalBurnedAll: bigint;
+  // Total onchain txs
+  totalTxs: number;
 }
 
 // ─── Page ──────────────────────────────────────────────────────────
@@ -328,8 +360,12 @@ const Home: NextPage = () => {
         client.readContract({ address: CLAWD_TOKEN, abi: erc20Abi, functionName: "balanceOf", args: ["0x7916773e871a832ae2b6046b0f964a078dc67ab4"] }),
       ]);
 
-      // Aggregated total burn (ALL sources)
-      const totalBurnedAll = deadBal + incBurned + fomoTotalBurned + tenTwentyFourXBurned + stakeBurned + memeArenaBurned + luckyClickBurned + lobsterTowerBurned + chatBurned + voteBurned + pfpBurned + tenKBurned + memeContestBurned;
+      // Total burned = dead address balance only (all burns go to dead address)
+      const totalBurnedAll = deadBal;
+
+      // Fetch total onchain txs from Blockscout (top 10 contracts in parallel)
+      const txCounts = await Promise.all(TX_COUNT_CONTRACTS.map(fetchTxCount));
+      const totalTxs = txCounts.reduce((s, c) => s + c, 0) + TX_COUNT_REST;
 
       // Fetch price from DexScreener
       let price = 0, fdv = 0;
@@ -375,6 +411,7 @@ const Home: NextPage = () => {
         pfpV2Minted,
         fomoTotalRoundsCurrent,
         totalBurnedAll,
+        totalTxs,
       });
       setLastUpdate(new Date());
     } catch (e) {
@@ -390,7 +427,7 @@ const Home: NextPage = () => {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const totalContracts = PRODUCTION_APPS.length + UTILITY_APPS.length + PROTOTYPE_CONTRACTS.length;
+  const totalContracts = PRODUCTION_APPS.length + UTILITY_APPS.length;
 
   const burnedPct = data
     ? ((parseFloat(formatUnits(data.totalBurnedAll, 18)) / parseFloat(formatUnits(data.totalSupply, 18))) * 100).toFixed(2)
@@ -423,7 +460,8 @@ const Home: NextPage = () => {
         ) : data ? (
           <>
             {/* ═══ HERO STATS — ROW 1 ═══ */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-3">
+              <StatCard label="🔗 Onchain Txs" value={data.totalTxs.toLocaleString()} />
               <StatCard label="🔥 Total Burned" value={fmt(data.totalBurnedAll)} sub={`${burnedPct}% of supply`} accent />
               <StatCard label="💰 USD Burned" value={fmtUsd(parseFloat(formatUnits(data.totalBurnedAll, 18)) * data.clawdPrice)} />
               <StatCard label="📈 CLAWD Price" value={data.clawdPrice > 0 ? `$${data.clawdPrice.toFixed(8)}` : "—"} />
@@ -456,6 +494,9 @@ const Home: NextPage = () => {
                     </h3>
                     <p className="text-gray-400 mt-1">Massive burn engine — the ecosystem&apos;s #1 burner</p>
                   </div>
+                  <a href="https://incinerator.clawdbotatg.eth.link" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors" style={{ background: "#ff6600", color: "#fff" }}>
+                    Visit App →
+                  </a>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <MiniStat label="Total Burned" value={fmt(data.incineratorBurned)} accent />
@@ -508,6 +549,9 @@ const Home: NextPage = () => {
                     </h3>
                     <p className="text-gray-400 mt-1">Click-to-reveal prediction game — 3 versions</p>
                   </div>
+                  <a href="https://1024x.fun" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors" style={{ background: "#8b5cf6", color: "#fff" }}>
+                    Visit App →
+                  </a>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <MiniStat label="Total Burned" value={fmt(data.tenTwentyFourXBurned)} accent />
@@ -549,43 +593,41 @@ const Home: NextPage = () => {
             </div>
 
             {/* ═══ SECTION 2: PRODUCTION APPS ═══ */}
-            <SectionHeader emoji="⚡" title="Production Apps" sub="Live contracts with real usage" />
+            <SectionHeader emoji="⚡" title="Known Apps" sub="Live contracts with real usage" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-10">
               <AppCard emoji="🏦" name="ClawdStake" desc="Stake CLAWD, earn rewards" address={CLAWD_STAKE}
+                site="https://stake.clawdbotatg.eth.link"
                 stats={[{ label: "Staked", value: fmt(data.stakeTotal) }, { label: "Burned", value: fmt(data.stakeBurned), accent: true }]} />
               <AppCard emoji="🖼" name="ClawdPFPMarket" desc="Profile Pic Prediction Market — 355 txs" address={CLAWD_PFP_MARKET}
+                site={`https://basescan.org/address/${CLAWD_PFP_MARKET}`}
                 stats={[]} />
               <AppCard emoji="🎰" name="LuckyClick" desc="Luck-based burn game" address={LUCKY_CLICK}
+                site="https://luckyclick.clawdbotatg.eth.link"
                 stats={[{ label: "Burned", value: fmt(data.luckyClickBurned), accent: true }]} />
               <AppCard emoji="🗼" name="LobsterTower" desc="Stack-and-climb tower game" address={LOBSTER_TOWER}
+                site="https://lobsterstack.clawdbotatg.eth.link"
                 stats={[{ label: "Burned", value: fmt(data.lobsterTowerBurned), accent: true }]} />
               <AppCard emoji="🏟️" name="Meme Arena" desc="Vote on memes, burn CLAWD" address={MEME_ARENA}
+                site={`https://basescan.org/address/${MEME_ARENA}`}
                 stats={[{ label: "Burned", value: fmt(data.memeArenaBurned), accent: true }]} />
               <AppCard emoji="🧠" name="ClawdViction" desc="AI conviction governance" address={CLAWD_VICTION}
+                site="https://github.com/clawdbotatg/clawdviction"
                 stats={[]} />
               <AppCard emoji="🔥" name="Burner" desc="Auto-burns 500K/hour" address="0xe499B193ffD38626D79e526356F3445ce0A943B9" stats={[]} />
               <AppCard emoji="💬" name="Chat" desc="Burn CLAWD to post onchain" address="0x33f97501921e40c56694b259115b89b6a6ee5500"
+                site="https://chat.clawdbotatg.eth.link"
                 stats={[{ label: "CLAWD Burned", value: fmt(data.chatBurned), accent: true }]} />
               <AppCard emoji="🗳️" name="Vote" desc="Create proposals, stake to vote" address="0xf86D964188115AFc8DBB54d088164f624B916442"
+                site="https://vote.clawdbotatg.eth.link"
                 stats={[{ label: "Proposals", value: data.voteProposals.toString() }, { label: "Burned", value: fmt(data.voteBurned), accent: true }]} />
               <AppCard emoji="🎨" name="PFP" desc="0.001 ETH mint, 1M CLAWD burned" address="0x0dD551Df233cA7B4CE45e2f4bb17faB3c0b53647"
+                site="https://pfp.clawdbotatg.eth.link"
                 stats={[{ label: "Minted", value: data.pfpMinted.toString() }, { label: "Burned", value: fmt(data.pfpBurned), accent: true }]} />
               <AppCard emoji="🦞" name="10K" desc="10,000 onchain SVG NFTs" address="0xaA120337233148e6af935069d69eE3AD037eD822"
                 stats={[{ label: "Minted", value: data.tenKMinted.toString() }, { label: "Burned", value: fmt(data.tenKBurned), accent: true }]} />
-              <AppCard emoji="🏆" name="Meme Contest" desc="Submit memes, vote, win" address="0x716836Ebf9f6E3b18110CCef89E06dD07b8371c6" stats={[]} />
-            </div>
-
-            {/* ═══ SECTION 3: PROTOTYPES ═══ */}
-            <SectionHeader emoji="🧪" title="Nightly Prototypes" sub={`${PROTOTYPE_CONTRACTS.length} experimental contracts deployed to Base`} />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-10">
-              {PROTOTYPE_CONTRACTS.map(c => (
-                <a key={c.address} href={basescanAddr(c.address)} target="_blank" rel="noopener noreferrer"
-                  className="rounded-lg p-3 border border-gray-800/50 hover:border-gray-700 transition-colors group" style={{ background: "#111118" }}>
-                  <div className="text-sm font-medium text-gray-300 group-hover:text-white truncate">{c.name}</div>
-                  <div className="text-xs text-gray-600 truncate">{c.desc}</div>
-                  <div className="text-xs text-gray-700 mt-1 font-mono">{shortAddr(c.address)}</div>
-                </a>
-              ))}
+              <AppCard emoji="🏆" name="Meme Contest" desc="Submit memes, vote, win" address="0x716836Ebf9f6E3b18110CCef89E06dD07b8371c6"
+                site="https://memecontest.clawdbotatg.eth.link"
+                stats={[]} />
             </div>
 
             {/* ═══ DEPLOYER WALLETS ═══ */}
