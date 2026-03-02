@@ -477,6 +477,19 @@ const Home: NextPage = () => {
               <StatCardSmall label="🔒 Pending Burn" value={fmt(data.incineratorBalance)} sub="held in Incinerator" color="text-orange-400" />
             </div>
 
+            {/* ═══ BUY CLAWD ═══ */}
+            <div className="flex justify-center mb-6">
+              <a
+                href="https://app.uniswap.org/#/swap?outputCurrency=0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07&chain=base"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-8 py-3 rounded-xl text-lg font-bold tracking-wide transition-all hover:scale-105 hover:brightness-110"
+                style={{ background: "linear-gradient(135deg, #ff6600, #ff2d55)", color: "#fff", boxShadow: "0 0 24px rgba(255,100,0,0.4)" }}
+              >
+                🦞 BUY CLAWD
+              </a>
+            </div>
+
             {/* ═══ SECTION 1: FLAGSHIP APPS ═══ */}
             <SectionHeader emoji="⭐" title="Flagship Apps" sub="The core of the CLAWD ecosystem" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
