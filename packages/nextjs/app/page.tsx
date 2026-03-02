@@ -53,20 +53,25 @@ const MEME_CONTEST = "0xe94b4b5a7a0a98cf9ed303a9c6d2d4ad7e5ef423" as const;
 const PFP_V2 = "0x8606551d2be495503fbf23f50bbfd307385e9bdf" as const;
 const CONTRACTS_DEPLOYED = 141; // hardcoded from deployer crawl
 
-// ─── Top 10 contracts for tx count ─────────────────────────────────
+// ─── Contracts for live tx count (updated 2026-03-02) ───────────────
 const TX_COUNT_CONTRACTS = [
-  "0x859e5cb97e1cf357643a6633d5bec6d45e44cfd4",
-  "0xaa7466fa805e59f06c83befb2b4e256a9b246b04",
-  "0xef2f6d7020f4b088fee65d5369bc792d7b2f40fc",
-  "0xa37c70168201c290cbefcbda95daa779f0dba305",
-  "0x861e96c70a94cdebfb3fb89f3a96fe16b5e31891",
-  "0x536453350f2eee2eb8bfee1866baf4fca494a092",
-  "0x6b003f883c608bdad938cd6dc3730b17ac46e196",
-  "0x1062eace4f3083c164796b9b2649ce6c25acebe6",
-  "0x90552946edd5a6bad7647655da6c805a188dfd25",
-  "0x8d3547c0336149a1592472ac8d5c07c52865f801",
+  "0x859e5cb97e1cf357643a6633d5bec6d45e44cfd4", // ClawFomo v1 (current production)
+  "0xaa7466fa805e59f06c83befb2b4e256a9b246b04", // 1024x current
+  "0xef2f6d7020f4b088fee65d5369bc792d7b2f40fc", // 1024x older
+  "0xa37c70168201c290cbefcbda95daa779f0dba305", // PFP Market
+  "0x861e96c70a94cdebfb3fb89f3a96fe16b5e31891", // ClawFomo v2
+  "0x536453350f2eee2eb8bfee1866baf4fca494a092", // Incinerator
+  "0x6b003f883c608bdad938cd6dc3730b17ac46e196", // 1024x oldest
+  "0x1062eace4f3083c164796b9b2649ce6c25acebe6", // LuckyClick
+  "0x90552946edd5a6bad7647655da6c805a188dfd25", // Stake
+  "0x8d3547c0336149a1592472ac8d5c07c52865f801", // unknown
+  "0xcb67a69471f4842a142460c271a26deab358ea79", // ClawFomo v3
+  "0x572bc6149a5a9b013b5e9c370aef6fec8388f53f", // ClawFomo v4
+  "0xd4f419065ee4b89ef8f9b2c224a9ebdee62abf54", // ClawFomo v5
+  "0xa5cd6e15f91ae84f5513a60c398f3c5e4c43e399", // ClawFomo v6
+  "0x23f44c39f417f16807643fc8eb3435c3e47e1a32", // ClawFomo v7
 ] as const;
-const TX_COUNT_REST = 852; // remaining ecosystem contracts (known from crawl)
+const TX_COUNT_REST = 615; // remaining ecosystem contracts (crawl 2026-03-02; promoted 5 fomo versions to live list)
 
 async function fetchTxCount(addr: string): Promise<number> {
   try {
